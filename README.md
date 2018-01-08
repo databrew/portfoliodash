@@ -7,19 +7,20 @@ Data were emailed to developers on January 7, 2018. Data are downloadable (to au
 
 ## Getting data  
 
-- Download the two `.zip` files from the above URL into the `data` directory of this repository.
-- Extract the `.zip` files' contents in place. 
-- Delete the `.zip` files.
+- Download the `as_portfolio (with data).zip` file from the above URL into the `data` directory of this repository.
+- Extract the `.zip` file's contents in place. 
+- Delete the `.zip` file.
 
 ## Setting up the database
 
+- The below assumes you are running linux and have postgresql on your system.
 - Run `psql` to get into an interactive postgresql console.
 - Create a `portfolio` database by running: `CREATE DATABASE portfolio`.
 - Connect to the database: `\connect portfolio;`
 - Create a `portfolio` schema: `create schema portfolio;`
 - Ctrl+d to get out of interactive psql session.
 - Go into the data directory: `cd data`
-- Extract the tables: `psql -d portfolio -f run_insert.sql`
+- Extract the tables: `psql -d portfolio -f as_portfolio\ \(with\ data\).sql`
 - Go back up a level: `cd ..`
 - Open a psql session in portfolio db: `psql portfolio`
 - Set the search path for the schema: `SET search_path TO portfolio;`
@@ -29,14 +30,10 @@ Data were emailed to developers on January 7, 2018. Data are downloadable (to au
   Schema   |     Name     | Type  |  Owner  
 -----------+--------------+-------+---------
  portfolio | as_portfolio | table | joebrew
- portfolio | as_results   | table | joebrew
-(2 rows)
+(1 row)
 ```
 - Having confirmed the above, permanently alter the `search_path` for the portfolio database: `ALTER DATABASE portfolio SET search_path TO portfolio;`
-- Try copying data from the `.csv` into the database tables: `COPY portfolio.as_portfolio FROM '/home/joebrew/Documents/portfoliodash/data/portfolio.view_current_as_portfolio.csv' DELIMITER ',' CSV HEADER;`
-- Get the following error:
+- To query the table, you can use SQL as such:
 ```
-ERROR:  invalid input syntax for type date: "dataset_date"
-CONTEXT:  COPY as_portfolio, line 1, column dataset_date: "dataset_date"
+SELECT * FROM portfolio.as_portfolio LIMIT 5;
 ```
-- Write to Soren to ask for help or just a full, one-file sql dump.
