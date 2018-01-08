@@ -33,3 +33,10 @@ Data were emailed to developers on January 7, 2018. Data are downloadable (to au
 (2 rows)
 ```
 - Having confirmed the above, permanently alter the `search_path` for the portfolio database: `ALTER DATABASE portfolio SET search_path TO portfolio;`
+- Try copying data from the `.csv` into the database tables: `COPY as_portfolio from '/home/joebrew/Documents/portfoliodash/data/portfolio.view_current_as_portfolio.csv' WITH (FORMAT csv);`
+- Get the following error:
+```
+ERROR:  invalid input syntax for type date: "dataset_date"
+CONTEXT:  COPY as_portfolio, line 1, column dataset_date: "dataset_date"
+```
+- Write to Soren to ask for help.
