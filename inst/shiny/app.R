@@ -22,9 +22,11 @@ ui <- tagList(
       sidebarMenu(
         menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
         menuItem("Portfolio Funding", tabName = "funding", icon = icon("bar-chart")),
-        menuItem("Portfolio Longevity", tabName = "longevity", icon = icon("calendar"))
+        menuItem("Portfolio Longevity", tabName = "longevity", icon = icon("calendar")),
+        menuItem("Time and budget", tabName = "time_and_budget", icon = icon("clock-o")),
+        menuItem("Flag view", tabName = "flag_view", icon = icon("flag")),
+        menuItem("Project view", tabName = "project_view", icon = icon("cogs"))
       ),
-      
       
       div(style="position: absolute; bottom: 0px; background-color: white; width: 100%;", 
           
@@ -34,12 +36,8 @@ ui <- tagList(
                      tags$img(src='mcf_logo.png', style="width: 100px; display: inline;")),
               
               tags$a(href='http://www.ifc.org/',
-                     tags$img(src='ifc_logo.jpeg', style="width: 100px; display: inline;"))
-              
-          )
-          
-      )
-      
+                     tags$img(src='ifc_logo.jpeg', style="width: 100px; display: inline;"))   
+          ))
     ),
     
     ######################################################
@@ -66,7 +64,7 @@ ui <- tagList(
                          width = NULL, 
                          status = "warning",
                          
-                         tags$p(style = "font-size: 16px;",
+                         tags$p(style = "font-size: 13px;",
                                 paste0(
                                   "This dashboard was developed as a portfolio management tool for the Partnership for ",
                                   "Financial Inclusion between mastercard foundation and IFC. It provides an overview ",
@@ -76,7 +74,7 @@ ui <- tagList(
                                 tags$br()
                          ),
                          
-                         tags$p(style = "font-size: 16px;",
+                         tags$p(style = "font-size: 13px;",
                                 paste0("The "),
                                 tags$b("Portfolio Funding Chart "),
                                 paste0("reports portfolio volume over time and into the future based on closed, current ",
@@ -87,7 +85,7 @@ ui <- tagList(
                                 tags$br()
                          ),
                          
-                         tags$p(style = "font-size: 16px;",
+                         tags$p(style = "font-size: 13px;",
                                 paste0("The "),
                                 tags$b("Portfolio Longevity Chart "),
                                 paste0("lists each project within the specified portfolio (by business line or ",
@@ -97,7 +95,7 @@ ui <- tagList(
                                 tags$br()
                          ),
                          
-                         tags$p(style = "font-size: 14px;",
+                         tags$p(style = "font-size: 12px;",
                                 
                                 paste0("The dashboard is still under development. Version: 0.4 Alpha"),
                                 tags$br(),
@@ -347,7 +345,13 @@ ui <- tagList(
                           )
                   )
                 )
-        )
+        ),
+        tabItem(tabName = 'time_and_budget',
+                fluidPage(fluidRow(h3('Under construction')))),
+        tabItem(tabName = 'flag_view',
+                fluidPage(fluidRow(h3('Under construction')))),
+        tabItem(tabName = 'project_view',
+                fluidPage(fluidRow(h3('Under construction'))))
     )
     )
   )
