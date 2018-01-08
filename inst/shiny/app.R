@@ -1,178 +1,358 @@
-#############################################
-#                                           #
-#   KM Portfolio Dashboard                  #
-#   Version 0.4.1 (Alpha)                   #
-#   27/09/2017                              #
-#   Christian Ruckteschler                  #
-#                                           #
-#############################################
-
-
-# Give more memory to java environment (not required when loading data from local csv)
-#options(java.parameters = "- Xmx2048m")
-
-
-
-library(xlsx)
-library(shiny)
-library(shinydashboard)
-library(timevis)
-
-
-
-# Set working directory
-# Two options depending on how OneDrive files are stored on the local machine
-
-dir1 <- paste0(dirname(path.expand("~")),"/WBG/Sinja Buri - FIG SSA MEL/Program Operations/Projects/Knowledge Product - Dashboards & Viz/Portfolio Dashboard/portfolio_dashboard")
-dir2 <- paste0(dirname(path.expand("~")),"/WBG/Sinja Buri - Program Operations/Projects/Knowledge Product - Dashboards & Viz/Portfolio Dashboard/portfolio_dashboard")
-
-if (file.exists(dir1)) {
-  setwd(dir1)
-} else if(file.exists(dir2)){
-  setwd(dir2)
-} else {
-  message('No OneDrive directory for the portfolio dashboard exists. Using the contents of this directory.')
-}
-
-# LOAD DATA
-dir_longevity_data <- "longevity_data.csv"
-dir_portfolio_data <- "portfolio_funding_data.csv"
-dir_portfolio_volume <- "portfolio_volume.csv"
-
-longevity_data <- data.frame(read.csv(dir_longevity_data, blank.lines.skip = TRUE))
-portfolio_data <- data.frame(read.csv(dir_portfolio_data, blank.lines.skip = TRUE))
-portfolio_vol_data <- data.frame(read.csv(dir_portfolio_volume, blank.lines.skip = TRUE))
-
-portfolio_vol_data[is.na(portfolio_vol_data)] <- 0
-portfolio_vol_mat = as.matrix(portfolio_vol_data[1:3,2:5])
-rownames(portfolio_vol_mat) <- portfolio_vol_data[,"Category"]
-portfolio_vol_mat <- t(portfolio_vol_mat)
-portfolio_vol_mat <- portfolio_vol_mat / 1000000 # convert to numbers in mio USD
-
-
-
-
-
-
-#######################################################################################
-## 1) Time and Money Charts (Longevity)
-#######################################################################################
-
-
-dir_add_details <- "fig_ssa_addtional_details.csv"
-add_data <- data.frame(read.csv(dir_add_details, blank.lines.skip = TRUE)[c("project_id", "funding_source", "type", "mcf_extended")])
-longevity_data <- merge(longevity_data, add_data, by = "project_id", all.x = TRUE)
-
-longevity_data$dataset_date <- as.Date(longevity_data$dataset_date, format="%d/%m/%Y", tz = "GMT")
-longevity_data$graph_start_date <- as.Date(longevity_data$graph_start_date, format="%d/%m/%Y", tz = "GMT")
-longevity_data$project_end_date <- as.Date(longevity_data$project_end_date, format="%d/%m/%Y", tz = "GMT")
-
-active <- longevity_data$active_duration > 0
-closed <- longevity_data$closed_duration > 0
-pipeline <- longevity_data$pipeline_duration > 0
-longevity_data <- cbind(longevity_data, active, closed, pipeline)
-
-
-# extract region and business line from the portfolio_set column
-longevity_data$region <- substr(longevity_data$portfolio_set, 1, 3)
-longevity_data$bline <- substr(longevity_data$portfolio_set, 5, nchar(as.character(longevity_data$portfolio_set)))
-
-# Replace Missing Values for Added Variables
-longevity_data$funding_source <- as.character(longevity_data$funding_source)
-longevity_data$type <- as.character(longevity_data$type)
-longevity_data[is.na(longevity_data$funding_source), "funding_source"] <- "Undefined"
-longevity_data[is.na(longevity_data$type), "type"] <- "Undefined"
-longevity_data[is.na(longevity_data$mcf_extended), "mcf_extended"] <- 0
-longevity_data$mcf_extended <- as.integer(longevity_data$mcf_extended)
-
-
-# Factors
-dir_factors <- "factors.csv"
-factors <- read.csv(dir_factors, blank.lines.skip = TRUE)
-funding_src <- factors[factors$factor=="funding_source",2:ncol(factors)]
-funding_src <- funding_src[funding_src != ""]
-institution_type <- factors[factors$factor=="type",2:ncol(factors)]
-institution_type <- institution_type[institution_type != ""]
-custom_portfolio <- factors[factors$factor=="custom_portfolio",2:ncol(factors)]
-custom_portfolio <- custom_portfolio[custom_portfolio != ""]
-
-
-# Calcualte end of current fiscal year
-today <- Sys.Date()
-year <- format(today, "%Y")
-comp <- as.Date(paste0(year, "-07-01"))
-if(today > comp) {
-  end_fiscal_year <- as.Date(paste0(as.integer(year)+1, "-07-01"))
-} else {
-  end_fiscal_year <- comp
-}
-
-
-timeline <- timevis()
-
-
-# Add HTML Styling
-#####################################################
-
-# add table
-longevity_data$html <- paste("<table width=310 style='font-size: 13px;'><tr><td>", longevity_data$project_name, "</td><td style='width:50px; text-align:right;'>", 
-              longevity_data$burn_rate ,"%</td><td style='width:45px; text-align:right;'>", 
-              sprintf("$M %3.2f", longevity_data$prorated_total_funds_managed_by_ifc/1000000) ,"</td></tr></table>", 
-              sep = "")
-
-
-# coloring based on project status
-longevity_data$color <- "green"
-longevity_data[longevity_data$pipeline_duration > 0, "color"] <- "lightblue"
-longevity_data[longevity_data$closed_duration > 0, "color"] <- "red"
-
-
-
-
-
-
-
-
-
-#######################################################################################
-## 2) Portfolio Funding Chart
-#######################################################################################
-
-# Get data matrix from data frame, adjust units to $M, and transpose
-portfolio_mat <- t(data.matrix(portfolio_data[,3:5]))
-portfolio_mat <- portfolio_mat / 1000000
-rownames(portfolio_mat) <- c("Active Funds", "Closed Funds", "Pipeline Funds")
-
-# Get dates from data frame to label the x-axis
-quarters <- format(as.Date(portfolio_data[,1], format="%d/%m/%Y", tz = "GMT"), format = "%b-%y")
-
-# Get number of projects for second x-axis
-projects <- t(data.matrix(portfolio_data[,6]))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+source('global.R')
 ######################################################
 ## Shiny
 ######################################################
 
-source("ui.R", local = TRUE)
+ui <- tagList(
+  dashboardPage(
+    ######################################################
+    ## Header
+    ######################################################
+    
+    dashboardHeader(
+      title = "FIG SSA MEL Dashboard"  
+    ), 
+    ######################################################
+    ## Sidebar
+    ######################################################
+    dashboardSidebar(
+      
+      width = 250,
+      
+      sidebarMenu(
+        menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
+        menuItem("Portfolio Funding", tabName = "funding", icon = icon("bar-chart")),
+        menuItem("Portfolio Longevity", tabName = "longevity", icon = icon("calendar"))
+      ),
+      
+      
+      div(style="position: absolute; bottom: 0px; background-color: white; width: 100%;", 
+          
+          div(style="width: 203px; margin:0 auto; padding: 0;",
+              
+              tags$a(href='http://www.mastercardfdn.org/',
+                     tags$img(src='mcf_logo.png', style="width: 100px; display: inline;")),
+              
+              tags$a(href='http://www.ifc.org/',
+                     tags$img(src='ifc_logo.jpeg', style="width: 100px; display: inline;"))
+              
+          )
+          
+      )
+      
+    ),
+    
+    ######################################################
+    ## Body
+    ######################################################
+    dashboardBody(
+      
+      tags$head(
+        tags$link(rel = "stylesheet", type = "text/css", href = "styles.css")
+      ),
+      tabItems(
+        
+        ######################################################
+        ## Body - Landing Page
+        ######################################################
+        # Dashboard landing page
+        tabItem(tabName = "dashboard",
+                
+                column(width = 6, 
+                       
+                       box(
+                         title = "Welcome to the Portfolio Dashboard",
+                         solidHeader = TRUE,
+                         width = NULL, 
+                         status = "warning",
+                         
+                         tags$p(style = "font-size: 16px;",
+                                paste0(
+                                  "This dashboard was developed as a portfolio management tool for the Partnership for ",
+                                  "Financial Inclusion between mastercard foundation and IFC. It provides an overview ",
+                                  "over all active, closed and pipeline projects. The underlying dataset currently covers all ",
+                                  "IFC FIG advisory projects for Sub-Saharan Africa."
+                                ),
+                                tags$br()
+                         ),
+                         
+                         tags$p(style = "font-size: 16px;",
+                                paste0("The "),
+                                tags$b("Portfolio Funding Chart "),
+                                paste0("reports portfolio volume over time and into the future based on closed, current ",
+                                       "and pipeline projects' reported start and end dates. ", 
+                                       "The chart shows a picture of where the portfolio is today and simultaneously ",
+                                       "allows comparison with portfolio volumes and count in the past; ",
+                                       "and where the portfolio is headed into the future."),
+                                tags$br()
+                         ),
+                         
+                         tags$p(style = "font-size: 16px;",
+                                paste0("The "),
+                                tags$b("Portfolio Longevity Chart "),
+                                paste0("lists each project within the specified portfolio (by business line or ",
+                                       "graphically for overall region). Each project bar is entered according to ",
+                                       "project start date and end date to provide an overall view of the portfolio ",
+                                       "maturity and composition."),
+                                tags$br()
+                         ),
+                         
+                         tags$p(style = "font-size: 14px;",
+                                
+                                paste0("The dashboard is still under development. Version: 0.4 Alpha"),
+                                tags$br(),
+                                paste0("The underlying data was last updated on: ", longevity_data$dataset_date[1])
+                                
+                         )
+                         
+                       )
+                       
+                ), # end first column
+                
+                column(width = 6, 
+                       
+                       infoBoxOutput("infoBoxActive", width = NULL),
+                       infoBoxOutput("infoBoxClosed", width = NULL),
+                       infoBoxOutput("infoBoxBurn", width = NULL), 
+                       infoBoxOutput("infoBoxAvgSize", width = NULL),
+                       infoBoxOutput("infoBoxTotalSize", width = NULL) 
+                       
+                ) # end second column
+                
+        ),
+        ######################################################
+        ## Body - Funding Tab
+        ######################################################
+        
+        # Funding Tab
+        tabItem(tabName = "funding", 
+                
+                fluidRow(
+                  
+                  box(
+                    title = "Funding Chart",
+                    solidHeader = TRUE,
+                    status = "primary",
+                    width = 9,
+                    
+                    plotOutput("fundingPlot"),
+                    
+                    tags$ul(
+                      tags$li("Numbers on top of bars indicate active projects in that quarter."),
+                      tags$li("Based on project start and end dates."),
+                      tags$li("Trends are estimates since projects frequently stay active past listed end dates; 
+                              and pipeline projects may change in volume and timeline.")
+                      )
+                    ),
+                  
+                  box(
+                    title = "Controls",
+                    solidHeader = TRUE,
+                    status = "warning",
+                    width = 3,
+                    
+                    selectInput("selectFundingRegion", "Region: ", c("Sub-Saharan Africa" = "SSA"), selected = "SSA")
+                    
+                  )  
+                  )
+                
+        ),
+        ######################################################
+        ## Body - Longevity Tab
+        ######################################################
+        
+        # Longevity Tab
+        tabItem(tabName = "longevity",
+                
+                fluidRow(
+                  
+                  column( width = 9,
+                          
+                          box(
+                            title = "Controls",
+                            status = "warning",
+                            solidHeader = TRUE,
+                            width = NULL,
+                            
+                            div(style="display: inline-block;vertical-align:top; width: 175px; margin-right:10px;",
+                                selectInput("selectRegion", "Region: ", c("Sub-Saharan Africa" = "SSA"), selected = "SSA")
+                            ),
+                            div(style="display: inline-block;vertical-align:top; width: 175px; margin-right:10px;",
+                                selectInput("selectBline", "Business Line: ", c("FIG" = "FIG"), selected = "FIG")
+                            ),
+                            div(style="display: inline-block;vertical-align:top; width: 175px; margin-right:10px;",
+                                selectInput("selectPortfolio", "Custom Portfolio: ", custom_portfolio, selected = custom_portfolio[2])
+                            ),
+                            div(style="display: inline-block;vertical-align:top; width: 250px; margin-right:10px;",
+                                checkboxGroupInput("selectProjType", "Display Projects With Status:", 
+                                                   c("Active" = "active", "Closed" = "closed", "Pipeline" = "pipeline"),
+                                                   inline = TRUE,
+                                                   selected = c("active", "closed", "pipeline"))
+                            ),
+                            div(style="display: inline-block;vertical-align:top; width: 150px;",
+                                
+                                selectInput("selectOrder", "Order by:", c("Start Date" = "graph_start_date", "End Date" = "project_end_date", "Burn Rate" = "burn_rate",
+                                                                          "Size ($M)" = "prorated_total_funds_managed_by_ifc"), selected = c("project_end_date"))
+                            ),
+                            div(style="display: inline-block;vertical-align:top; width: 150px;",
+                                selectInput("orderDir", "Direction:", c("Ascending" = "ascending", "Descending" = "descending"), selected = c("ascending"))
+                            )
+                          ),
+                          
+                          
+                          box(
+                            title = "Funding Chart",
+                            solidHeader = TRUE,
+                            status = "primary",
+                            width = NULL,
+                            collapsible = TRUE,
+                            collapsed = TRUE,
+                            
+                            tags$div(style="width: 950px; margin-left: 200px;",
+                                     plotOutput("fundingPlot2")
+                            )
+                          ),
+                          
+                          box(
+                            title = "Time and Budget Plot",
+                            solidHeader = TRUE,
+                            status = "primary",
+                            width = NULL,
+                            
+                            
+                            timevisOutput("longevityPlot")
+                          )
+                  ),  
+                  
+                  column( width = 3,
+                          
+                          box(
+                            title = "Legend",
+                            status = "warning",
+                            solidHeader = TRUE,
+                            width = NULL,
+                            
+                            
+                            tags$p(
+                              tags$b("Dataset Date: "),
+                              paste0(longevity_data$dataset_date[1]),
+                              tags$br(),
+                              tags$span(style = 'color: red;', "Red Line"), ": End of Fiscal Year",
+                              tags$br(),
+                              tags$span(style = 'color: blue;', "Blue Line"), ": Dataset Date (Default)",
+                              
+                              
+                              tags$table( style = 'border-spacing: 5px; border-collapse: separate;',
+                                          
+                                          tags$tr(
+                                            tags$td(style = 'width: 15px; background-color: green;', " "),
+                                            tags$td(style = 'font-size:12px;', "Active Projects")
+                                          ),
+                                          tags$tr(
+                                            tags$td(style = 'width: 15px; background-color: red;', " "),
+                                            tags$td(style = 'font-size:12px;', "Closed Projects")
+                                          ),
+                                          tags$tr(
+                                            tags$td(style = 'width: 15px; background-color: lightblue;', " "),
+                                            tags$td(style = 'font-size:12px;', "Pipeline Projects")
+                                          ),
+                                          tags$tr(
+                                            tags$td(style = 'width: 15px; background-color: yellow;', " "),
+                                            tags$td(style = 'font-size:12px;', "Selected Project")
+                                          )
+                                          
+                              ),
+                              
+                              tags$p("Click on a projcet in the timeline to see project details below.")
+                              
+                            ),
+                            
+                            actionButton("btn", "Adjust time")
+                            
+                          ),
+                          
+                          
+                          box(
+                            title = "Project Details",
+                            status = "warning",
+                            solidHeader = TRUE,
+                            width = NULL,
+                            
+                            tags$table(
+                              
+                              tags$tr(
+                                tags$td(tags$b("Name: ")),
+                                tags$td(style="padding-left:20px;", textOutput("projName"))
+                              ),
+                              tags$tr(
+                                tags$td(tags$b("Project ID: ")),
+                                tags$td(style="padding-left:20px;", textOutput("projID"))
+                              ),
+                              tags$tr(
+                                tags$td(tags$b("Status: ")),
+                                tags$td(style="padding-left:20px;", textOutput("projStatus"))
+                              ),
+                              tags$tr(
+                                tags$td(tags$b("Start Date: ")),
+                                tags$td(style="padding-left:20px;", textOutput("projStart"))
+                              ),
+                              tags$tr(
+                                tags$td(tags$b("End Date: ")),
+                                tags$td(style="padding-left:20px;", textOutput("projEnd"))
+                              ),
+                              tags$tr(
+                                tags$td(tags$b("Size: ")),
+                                tags$td(style="padding-left:20px;", textOutput("projSize"))
+                              ),
+                              tags$tr(
+                                tags$td(tags$b("Burn Rate: ")),
+                                tags$td(style="padding-left:20px;", textOutput("projBurn"))
+                              )
+                              
+                            )
+                            
+                          ), # End project details box
+                          
+                          box(
+                            title = "Actual Portfolio Volume & Expenditure",
+                            status = "warning",
+                            solidHeader = TRUE,
+                            width = NULL,
+                            
+                            tags$b("Active Portfolio"),
+                            div(style='height: 35px;',
+                                plotOutput("actPortfolio1")
+                            ),
+                            
+                            tags$b("Expenses To-Date"),
+                            div(style='height: 35px;',
+                                plotOutput("actPortfolio2")
+                            ),
+                            
+                            tags$b("Available Budget"),
+                            div(style='height: 80px;',
+                                plotOutput("actPortfolio3")
+                            ),
+                            tags$table( style = 'border-spacing: 5px; border-collapse: separate;',
+                                        
+                                        tags$tr(
+                                          tags$td(style = 'width: 15px; background-color: #4d79ff;', " "),
+                                          tags$td(style = 'font-size:12px;', "Active Portfolio Projects, Operationally Closed")
+                                        ),
+                                        tags$tr(
+                                          tags$td(style = 'width: 15px; background-color: #00e64d;', " "),
+                                          tags$td(style = 'font-size:12px;', "Expected Pipeline Volume")
+                                        ) 
+                            )       
+                          )
+                  )
+                )
+        )
+    )
+    )
+  )
+)
+
 
 
 
