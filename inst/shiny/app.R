@@ -214,7 +214,6 @@ ui <- tagList(
                             #          plotOutput("funding_plot2")
                             # )
                           ),
-                          textOutput('longevity_plot_text'),
                           box(
                             title = "Time and Budget Plot",
                             solidHeader = TRUE,
@@ -433,10 +432,35 @@ server <- function(input, output, session) {
       portfolio_mat_data <-
         portfolio_mat_data %>%
         filter(between(date, tr[1], tr[2]))
+    } else {
+      tr <- as.Date(c('2015-01-15',
+                      '2016-01-15'))
     }
-    portfolio_mat_data$date <- as.character(portfolio_mat_data$date)
+    
+    # "Expand" the data so that there are 0s at the dates of interest
+    left <- expand.grid(date = seq(as.Date(paste0(format(as.Date(tr[1]), '%Y-%m'), '-15')),
+                                   as.Date(paste0(format(as.Date(tr[2]), '%Y-%m'), '-15')),
+                            by = 'month'),
+                        key = unique(portfolio_mat_data$key))
+    # Capture the date range of the portfolio_mat_data
+    date_range <- range(portfolio_mat_data$date)
+    portfolio_mat_data <-
+      left_join(left, portfolio_mat_data,
+                by = c('key', 'date')) %>%
+      # If within date range and empty, remove; if outside, keep
+      filter(date <= date_range[1] | date >= date_range[2] | !is.na(value)) %>%
+      mutate(date = format(date, '%Y-%m'))
+      # mutate(#value = ifelse(is.na(value), 0, value),
+      #        date = as.character(date))
+    
     n1 <- nPlot(value ~ date, group = "key", data = portfolio_mat_data, type = "multiBarChart", width = 500, dom = 'funding_plot')
     n1$chart(stacked = TRUE)
+    # n1$xAxis(
+    #   tickFormat =
+    #     "#! function(d) {
+    #     return d3.time.format('%b %Y')(new Date(d * 24 * 60 * 60 * 1000))
+    # } !#"
+    # )
     return(n1)
     # par(mar=c(7,7,7,7), mgp = c(4, 1, 0))
     # plot <- barplot(portfolio_mat,
@@ -511,12 +535,7 @@ server <- function(input, output, session) {
       as.character(x)
     }
   })
-  # Create table to be deleted
-  output$longevity_plot_text <- renderText({
-    longevity_plot_range()
-  })
-  
-  
+
   # Render a longevity plot
   output$longevity_plot <- renderTimevis({
     
