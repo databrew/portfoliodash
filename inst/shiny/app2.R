@@ -6,7 +6,7 @@ library(dplyr)
 users <- data.frame(username = letters[1:5],
                     password = 1:5)
 
-header <- dashboardHeader(title="Shiny log-in")
+header <- dashboardHeader(title="FIG SSA MEL Dashboard")
 sidebar <- dashboardSidebar(
   sidebarMenu(
     h4(textOutput('submit_text'), align = 'center'),
@@ -35,11 +35,9 @@ body <- dashboardBody(
     tabItem(
       tabName="main",
       fluidPage(
-        fluidRow(h2(textOutput('text1')),
-                 fluidRow(tableOutput('table1')),
-                 fluidRow(plotOutput('plot1'))
+      uiOutput('welcome_page'),
+      uiOutput('main_page')
         )
-      )
     ),
     tabItem(
       tabName = 'longevity',
@@ -205,7 +203,7 @@ server <- function(input, output) {
     out <- FALSE
     un <- input$username
     pw <- input$password
-    if(!is.null(username) & !is.null(password)){
+    if(!is.null(un) & !is.null(pw)){
       the_password <- users %>%
         filter(username == un) %>%
         .$password
@@ -251,6 +249,105 @@ server <- function(input, output) {
   output$plot1 <- renderPlot({
     if(ok()){
       barplot(1:10)
+    }
+  })
+  
+  output$fap_plot <- renderPlot({
+    barplot(1:10)
+  })
+  output$apv_plot <- renderPlot({
+    barplot(10:1)
+  })
+  output$aps_plot <- renderPlot({
+    plot(10:1, (10:1)^3)
+  })
+  output$main_page <- renderUI({
+    okay <- ok()
+    if(okay){
+      fluidPage(
+        fluidRow(
+          shinydashboard::box(
+            plotOutput('fap_plot'),
+            title = 'Financially active portfolio',
+            width = 4,
+            solidHeader = TRUE,
+            status = "primary"),
+          shinydashboard::box(
+            plotOutput('apv_plot'),
+            title = 'Active portfolio volume',
+            width = 4,
+            solidHeader = TRUE,
+            status = "primary"),
+          shinydashboard::box(
+            plotOutput('aps_plot'),
+            title = 'Active portfolio sp',
+            width = 4,
+            solidHeader = TRUE,
+            status = "primary")),
+        fluidRow(valueBox(value = 1, 
+                          subtitle = 'Some subtitle', 
+                          icon = NULL, 
+                          color = "aqua", 
+                          width = 4,
+                          href = NULL),
+                 valueBox(value = 1, 
+                          subtitle = 'Some subtitle', 
+                          icon = NULL, 
+                          color = "aqua", 
+                          width = 4,
+                          href = NULL),
+                 valueBox(value = 1, 
+                          subtitle = 'Some subtitle', 
+                          icon = NULL, 
+                          color = "aqua", 
+                          width = 4,
+                          href = NULL))
+      )
+    }
+  })
+  output$welcome_page <- renderUI({
+    okay <- ok()
+    welcome_width <- ifelse(okay, 8, 11)
+    cl <- ifelse(okay, TRUE, FALSE)
+    filter_width <- 12 - welcome_width
+    welcome_text <- 
+      paste0(
+        "This dashboard was developed as a portfolio ",
+        "management tool for the Partnership for ",
+        "Financial Inclusion between mastercard foundation ",
+        "and IFC. It provides an overview ",
+        "over all active, closed and pipeline projects. ",
+        "The underlying dataset currently covers all ",
+        "IFC FIG advisory projects for Sub-Saharan Africa."
+      )
+    welcome_box <-
+      shinydashboard::box(
+        tags$p(style = "font-size: 20px;",
+               welcome_text
+        ),
+        title = 'Welcome',
+        status = 'warning',
+        solidHeader = TRUE,
+        collapsible = TRUE,
+        collapsed = cl,
+        width = 12
+      )
+    # if(okay){
+      fluidRow(
+        column(welcome_width,
+               welcome_box),
+        column(filter_width,
+               uiOutput('industry_filter'))
+        
+      )
+    # }
+  })
+  output$industry_filter <- renderUI({
+    okay <- ok()
+    if(okay){
+      selectInput('industry',
+                  'Industry',
+                  choices = letters)
     }
   })
 }
