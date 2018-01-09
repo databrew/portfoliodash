@@ -1,6 +1,14 @@
 # Portfolio dashboard
 A dashboard for the World Bank / IFC. Built in collaboration with [Databrew](http://datbrew.cc)
 
+## Downloading this package
+
+To download this package, run the following in R.
+
+```
+devtools::install_github('databrew/portfoliodash')
+```
+
 ## Data sources
 
 Data were emailed to developers on January 7, 2018. Data are downloadable (to authorized collaborators) at https://drive.google.com/open?id=1EtT8CmyL3XktXs49YXI-XhYtMcSfFhYY. 
@@ -60,3 +68,4 @@ SELECT * FROM portfolio.as_portfolio LIMIT 5;
 ├── portfolio_funding_data.csv
 └── portfolio_volume.csv
 ```
+
