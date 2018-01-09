@@ -21,7 +21,17 @@ sidebar <- dashboardSidebar(
     menuItemOutput('flag_view_menu'),
     menuItemOutput('project_view_menu'),
     menuItemOutput('about_menu'),
-    uiOutput('log_out_ui')
+    uiOutput('log_out_ui'),
+    div(style="position: absolute; bottom: 0px; background-color: white; width: 100%;", 
+        
+        div(style="width: 203px; margin:0 auto; padding: 0;",
+            
+            tags$a(href='http://www.mastercardfdn.org/',
+                   tags$img(src='mcf_logo.png', style="width: 100px; display: inline;")),
+            
+            tags$a(href='http://www.ifc.org/',
+                   tags$img(src='ifc_logo.jpeg', style="width: 100px; display: inline;"))   
+        ))
   )
 )
 
