@@ -1,10 +1,15 @@
 library(shiny)
 library(shinydashboard)
 library(dplyr)
+library(ggplot2)
 
 # Define acceptable password username combinations
 users <- data.frame(username = letters[1:5],
                     password = 1:5)
+
+# Height for main page charts
+main_page_plot_height_num <- 250
+main_page_plot_height <- paste0(main_page_plot_height_num * 1.4, 'px')
 
 header <- dashboardHeader(title="FIG SSA MEL Dashboard")
 sidebar <- dashboardSidebar(
@@ -264,13 +269,14 @@ server <- function(input, output) {
   
   output$fap_plot <- renderPlot({
     barplot(1:10)
-  })
+  }, height = main_page_plot_height_num)
   output$apv_plot <- renderPlot({
     barplot(10:1)
-  })
+  }, height = main_page_plot_height_num)
   output$aps_plot <- renderPlot({
     plot(10:1, (10:1)^3)
-  })
+  }, height = main_page_plot_height_num)
+  
   output$main_page <- renderUI({
     okay <- ok()
     if(okay){
@@ -281,35 +287,38 @@ server <- function(input, output) {
             title = 'Financially active portfolio',
             width = 4,
             solidHeader = TRUE,
-            status = "primary"),
+            status = "primary",
+            height = main_page_plot_height),
           shinydashboard::box(
             plotOutput('apv_plot'),
             title = 'Active portfolio volume',
             width = 4,
             solidHeader = TRUE,
-            status = "primary"),
+            status = "primary",
+            height = main_page_plot_height),
           shinydashboard::box(
             plotOutput('aps_plot'),
             title = 'Active portfolio sp',
             width = 4,
             solidHeader = TRUE,
-            status = "primary")),
+            status = "primary",
+            height = main_page_plot_height)),
         fluidRow(valueBox(value = 1, 
-                          subtitle = 'Some subtitle', 
+                          subtitle = 'Active projects', 
                           icon = NULL, 
-                          color = "aqua", 
+                          color = "orange", 
                           width = 4,
                           href = NULL),
                  valueBox(value = 1, 
-                          subtitle = 'Some subtitle', 
+                          subtitle = 'Average burn rates', 
                           icon = NULL, 
-                          color = "aqua", 
+                          color = "orange", 
                           width = 4,
                           href = NULL),
                  valueBox(value = 1, 
-                          subtitle = 'Some subtitle', 
+                          subtitle = 'Average project size', 
                           icon = NULL, 
-                          color = "aqua", 
+                          color = "orange", 
                           width = 4,
                           href = NULL))
       )
