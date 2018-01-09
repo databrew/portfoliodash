@@ -132,8 +132,8 @@ ui <- tagList(
                     solidHeader = TRUE,
                     status = "primary",
                     width = 9,
+                    plotOutput("funding_plot1"),
                     
-                    plotOutput("fundingPlot"),
                     
                     tags$ul(
                       tags$li("Numbers on top of bars indicate active projects in that quarter."),
@@ -204,13 +204,17 @@ ui <- tagList(
                             status = "primary",
                             width = NULL,
                             collapsible = TRUE,
-                            collapsed = TRUE,
-                            
-                            tags$div(style="width: 950px; margin-left: 200px;",
-                                     plotOutput("fundingPlot2")
+                            collapsed = FALSE,
+                            # showOutput("funding_plot", "nvd3"),
+                            tags$div(style="width: 600px; margin-left: 200px;",
+                                     showOutput("funding_plot", "nvd3")
                             )
+                            
+                            # tags$div(style="width: 950px; margin-left: 200px;",
+                            #          plotOutput("funding_plot2")
+                            # )
                           ),
-                          
+                          textOutput('longevity_plot_text'),
                           box(
                             title = "Time and Budget Plot",
                             solidHeader = TRUE,
@@ -218,7 +222,7 @@ ui <- tagList(
                             width = NULL,
                             
                             
-                            timevisOutput("longevityPlot")
+                            timevisOutput("longevity_plot")
                           )
                   ),  
                   
@@ -361,30 +365,6 @@ ui <- tagList(
 
 
 server <- function(input, output, session) {
-  
-  
-#  output$fundingPlot <- renderPlot({
-#    
-#    par(mar=c(7,7,7,7), mgp = c(4, 1, 0))
-#    plot <- barplot(data_mat, 
-#                    main = "Portfolio Funding Chart", 
-#                    xlab = "Quarter", 
-#                    ylab = "Portfolio Volume ($M)",
-#                    ylim = c(0, 1.1 * max(colSums(data_mat))),
-#                    legend = rownames(data_mat),
-#                    col = c("darkblue", "red", "lightblue"),
-#                    names.arg = quarters,
-#                    las = 2)
-#    
-#    text(x = plot, y = colSums(data_mat), label = projects, pos = 3)
-#    plot
-#    
-#  })
-  
-  
-  
-  
-  
   # DASHBOARD LANDING PAGE
   ##########################################
   
@@ -435,12 +415,50 @@ server <- function(input, output, session) {
   #####################################################################
   
   
-  output$fundingPlot <- renderPlot({
+  output$funding_plot <- renderChart({
     
+    # Reshape portfolio_mat into a "long" dataset (better for plotting)
+    portfolio_mat_data <- as.data.frame(portfolio_mat)
+    names(portfolio_mat_data) <- as.Date(paste0(quarters, '-15'),
+                                         format = '%b-%y-%d')
+    portfolio_mat_data$key <- row.names(portfolio_mat_data)
+    portfolio_mat_data <- 
+      tidyr::gather(portfolio_mat_data, date, value, 1:(ncol(portfolio_mat_data)-1))
+    portfolio_mat_data$date <- as.Date(portfolio_mat_data$date)
+    
+    # Filter data to only include the date range from the timevis chart
+    tr <- longevity_plot_range()
+    if(!is.null(tr)){
+      tr <- as.Date(tr)
+      portfolio_mat_data <-
+        portfolio_mat_data %>%
+        filter(between(date, tr[1], tr[2]))
+    }
+    portfolio_mat_data$date <- as.character(portfolio_mat_data$date)
+    n1 <- nPlot(value ~ date, group = "key", data = portfolio_mat_data, type = "multiBarChart", width = 500, dom = 'funding_plot')
+    n1$chart(stacked = TRUE)
+    return(n1)
+    # par(mar=c(7,7,7,7), mgp = c(4, 1, 0))
+    # plot <- barplot(portfolio_mat,
+    #                 main = "Portfolio Funding Chart",
+    #                 xlab = "Quarter",
+    #                 ylab = "Portfolio Volume ($M)",
+    #                 ylim = c(0, 1.1 * max(colSums(portfolio_mat))),
+    #                 legend = rownames(portfolio_mat),
+    #                 col = c("darkblue", "red", "lightblue"),
+    #                 names.arg = quarters,
+    #                 las = 2)
+    # 
+    # text(x = plot, y = colSums(portfolio_mat), label = projects, pos = 3)
+    # plot
+  })
+  
+  
+  output$funding_plot1 <- renderPlot({
     par(mar=c(7,7,7,7), mgp = c(4, 1, 0))
-    plot <- barplot(portfolio_mat, 
-                    main = "Portfolio Funding Chart", 
-                    xlab = "Quarter", 
+    plot <- barplot(portfolio_mat,
+                    main = "Portfolio Funding Chart",
+                    xlab = "Quarter",
                     ylab = "Portfolio Volume ($M)",
                     ylim = c(0, 1.1 * max(colSums(portfolio_mat))),
                     legend = rownames(portfolio_mat),
@@ -460,30 +478,47 @@ server <- function(input, output, session) {
   
   
   
+  
 
   # LONGEVITY PANEL
   ########################################################
   
   
-  output$fundingPlot2 <- renderPlot({
-    
-    par(mar=c(5,7,0,0), mgp = c(4, 1, 0))
-    plot <- barplot(portfolio_mat, 
-                    ylab = "Portfolio Volume ($M)",
-                    ylim = c(0, 1.1 * max(colSums(portfolio_mat))),
-                    legend = rownames(portfolio_mat),
-                    col = c("darkblue", "red", "lightblue"),
-                    names.arg = quarters,
-                    las = 2)
-    
-    text(x = plot, y = colSums(portfolio_mat), label = projects, pos = 3)
-    plot
-    
-  }, width = 'auto')
+  # output$funding_plot2 <- renderPlot({
+  #   
+  #   par(mar=c(5,7,0,0), mgp = c(4, 1, 0))
+  #   plot <- barplot(portfolio_mat, 
+  #                   ylab = "Portfolio Volume ($M)",
+  #                   ylim = c(0, 1.1 * max(colSums(portfolio_mat))),
+  #                   legend = rownames(portfolio_mat),
+  #                   col = c("darkblue", "red", "lightblue"),
+  #                   names.arg = quarters,
+  #                   las = 2)
+  #   
+  #   text(x = plot, y = colSums(portfolio_mat), label = projects, pos = 3)
+  #   plot
+  #   
+  # }, width = 'auto')
   
   
-  output$longevityPlot <- renderTimevis({
-    
+  # Capture the parameters of the longevity plot
+  longevity_plot_range <- reactive({
+    x <- input$longevity_plot_window
+    if(is.null(x)){
+      return(NULL)
+    } else {
+      x <- as.Date(as.POSIXct(x))
+      as.character(x)
+    }
+  })
+  # Create table to be deleted
+  output$longevity_plot_text <- renderText({
+    longevity_plot_range()
+  })
+  
+  
+  # Render a longevity plot
+  output$longevity_plot <- renderTimevis({
     
     # Filter data by project type
     if(length(input$selectProjType) == 3){
@@ -563,7 +598,7 @@ server <- function(input, output, session) {
       )
       timevis_data <- rbind(timevis_data, efy)
       
-      timevis_data[timevis_data$id == input$longevityPlot_selected, "style"] <- paste0("background-color: yellow; height: 12px")
+      timevis_data[timevis_data$id == input$longevity_plot_selected, "style"] <- paste0("background-color: yellow; height: 12px")
       
 
       timeline <- timevis(timevis_data, groups = group_data, showZoom = FALSE, fit = FALSE,
@@ -594,20 +629,20 @@ server <- function(input, output, session) {
   ######################################
   
   output$projName <- renderText({
-    paste0(longevity_data[longevity_data$project_id == input$longevityPlot_selected, "project_name"])
+    paste0(longevity_data[longevity_data$project_id == input$longevity_plot_selected, "project_name"])
   })
   
   output$projID <- renderText({
-    paste0(longevity_data[longevity_data$project_id == input$longevityPlot_selected, "project_id"])
+    paste0(longevity_data[longevity_data$project_id == input$longevity_plot_selected, "project_id"])
   })
   
   output$projStatus <- renderText({
-    if(!is.null(input$longevityPlot_selected))
+    if(!is.null(input$longevity_plot_selected))
     {
-      if(longevity_data[longevity_data$project_id == input$longevityPlot_selected, "active"] == TRUE){
+      if(longevity_data[longevity_data$project_id == input$longevity_plot_selected, "active"] == TRUE){
         paste0("Active")
       }
-      else if(longevity_data[longevity_data$project_id == input$longevityPlot_selected, "pipeline"] == TRUE){
+      else if(longevity_data[longevity_data$project_id == input$longevity_plot_selected, "pipeline"] == TRUE){
         paste0("Pipeline")
       }
       else{
@@ -618,19 +653,19 @@ server <- function(input, output, session) {
   
   
   output$projStart <- renderText({
-    paste0(longevity_data[longevity_data$project_id == input$longevityPlot_selected, "graph_start_date"])
+    paste0(longevity_data[longevity_data$project_id == input$longevity_plot_selected, "graph_start_date"])
   })
   
   output$projEnd <- renderText({
-    paste0(longevity_data[longevity_data$project_id == input$longevityPlot_selected, "project_end_date"])
+    paste0(longevity_data[longevity_data$project_id == input$longevity_plot_selected, "project_end_date"])
   })
   
   output$projSize <- renderText({
-    paste0("$", longevity_data[longevity_data$project_id == input$longevityPlot_selected, "prorated_total_funds_managed_by_ifc"]/1000000, "M")
+    paste0("$", longevity_data[longevity_data$project_id == input$longevity_plot_selected, "prorated_total_funds_managed_by_ifc"]/1000000, "M")
   })
   
   output$projBurn <- renderText({
-    paste0(longevity_data[longevity_data$project_id == input$longevityPlot_selected, "burn_rate"], "%")
+    paste0(longevity_data[longevity_data$project_id == input$longevity_plot_selected, "burn_rate"], "%")
   })
   
   
@@ -638,7 +673,7 @@ server <- function(input, output, session) {
   
   
   observeEvent(input$btn, {
-    setWindow("longevityPlot", as.Date("2012-07-01"), as.Date("2020-07-01"))
+    setWindow("longevity_plot", as.Date("2012-07-01"), as.Date("2020-07-01"))
   })
   
   

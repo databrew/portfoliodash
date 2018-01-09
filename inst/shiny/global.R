@@ -17,7 +17,9 @@ library(xlsx)
 library(shiny)
 library(shinydashboard)
 library(timevis)
-
+library(rCharts)
+library(dplyr)
+library(tidyr)
 
 
 # Set working directory
