@@ -501,7 +501,6 @@ server <- function(input, output, session) {
       data_subset <- longevity_data[FALSE,]
     }
     
-    
     # Filter data by custom portfolio
     if(input$selectPortfolio == "MCF") {
       data_subset <- data_subset[data_subset$funding_source == "MCF",]
@@ -509,10 +508,7 @@ server <- function(input, output, session) {
     else if(input$selectPortfolio == "MCF Extended") {
       data_subset <- data_subset[data_subset$mcf_extended == 1,]
     }
-    
-    
-    
-    
+
     # sort data
     if(input$orderDir == "ascending")
     {

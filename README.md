@@ -51,4 +51,13 @@ SELECT * FROM portfolio.as_portfolio LIMIT 5;
 
 ## Setting up the connections to OneDrive
 
-Much of the underlying data for this application relies on the World Bank's OneDrive. To get started, I copied the contents of `https://worldbankgroup-my.sharepoint.com/personal/sburi_ifc_org/Documents/FIG%20SSA%20MEL/MEL%20Program%20Operations/Knowledge%20Products/Dashboards%20%26%20Viz/Portfolio%20Dashboard/portfolio_dashboard?csf=1&e=BZReQ1` to `inst/shiny`.
+- Much of the underlying data for this application relies on the World Bank's OneDrive. To get started, copy the contents of `https://worldbankgroup-my.sharepoint.com/personal/sburi_ifc_org/Documents/FIG%20SSA%20MEL/MEL%20Program%20Operations/Knowledge%20Products/Dashboards%20%26%20Viz/Portfolio%20Dashboard/portfolio_dashboard?csf=1&e=BZReQ1` to `inst/shiny`. 
+- Then, move all `.csv` and `.xlsm` files to `inst/shiny/data`:
+```
+├── factors.csv
+├── fig_ssa_addtional_details.csv
+├── FIG SSA Dashboard - 15AUG17 - v67 .xlsm
+├── longevity_data.csv
+├── portfolio_funding_data.csv
+└── portfolio_volume.csv
+```
