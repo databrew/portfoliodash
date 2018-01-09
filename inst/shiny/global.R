@@ -124,9 +124,9 @@ longevity_data$html <- paste("<table width=310 style='font-size: 13px;'><tr><td>
 
 
 # coloring based on project status
-longevity_data$color <- "green"
+longevity_data$color <- "blue"
 longevity_data[longevity_data$pipeline_duration > 0, "color"] <- "lightblue"
-longevity_data[longevity_data$closed_duration > 0, "color"] <- "red"
+longevity_data[longevity_data$closed_duration > 0, "color"] <- "orange"
 
 
 #######################################################################################
