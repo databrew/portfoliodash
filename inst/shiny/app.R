@@ -313,7 +313,7 @@ server <- function(input, output) {
     renderText({
       user()
     })
-  
+
   output$main_menu <-
     renderMenu({
       # if(ok()){

@@ -1,8 +1,8 @@
 Package: portfoliodash
 Version: 0.0.0.9000
-Title: What the Package Does (one line, title case)
-Description: What the package does (one paragraph).
-Authors@R: person("First", "Last", , "first.last@example.com", c("aut", "cre"))
+Title: The IFC Portfolio Dashboard
+Description: A portfolio dashboard built by DataBrew for the IFC and World Bank.
+Authors@R: person("Joe", "Brew", , "joebrew@gmail.com", c("aut", "cre"))
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -10,5 +10,20 @@ ByteCompile: true
 Suggests: 
     MASS,
     testthat
+Imports:
+    data.tree,
+    htmlwidgets (>= 0.3.2),
+    shiny,
+    shinydashboard,
+    dplyr,
+    ggplot2,
+    lubridate,
+    magrittr,
+    ggthemes,
+    RColorBrewer,
+    xlsx,
+    timevis,
+    rCharts,
+    tidyr
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 6.0.1

@@ -3,3 +3,4 @@ inst/shiny/*.csv
 inst/shiny/*.xlsm
 inst/shiny/pub
 inst/shiny/old versions
+inst/shiny/rsconnect
