@@ -3,6 +3,8 @@ library(shinydashboard)
 library(dplyr)
 library(ggplot2)
 
+source('global.R')
+
 # Define acceptable password username combinations
 users <- data.frame(username = letters[1:5],
                     password = 1:5)
@@ -11,7 +13,7 @@ users <- data.frame(username = letters[1:5],
 main_page_plot_height_num <- 250
 main_page_plot_height <- paste0(main_page_plot_height_num * 1.4, 'px')
 
-header <- dashboardHeader(title="FIG SSA MEL Dashboard")
+header <- dashboardHeader(title="Portfolio Dashboard")
 sidebar <- dashboardSidebar(
   sidebarMenu(
     h4(textOutput('submit_text'), align = 'center'),
@@ -56,7 +58,42 @@ body <- dashboardBody(
     ),
     tabItem(
       tabName = 'longevity',
-      fluidPage()
+      fluidPage(
+        fluidRow(
+          shinydashboard::box(
+            tags$p(style = "font-size: 20px;",
+                   'Here is some text here'
+            ),
+            title = 'Controls',
+            status = 'warning',
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            collapsed = FALSE,
+            width = 12
+          )
+        ),
+        box(
+          title = "Funding Chart",
+          solidHeader = TRUE,
+          status = "primary",
+          width = NULL,
+          collapsible = TRUE,
+          collapsed = FALSE,
+          tags$div(style="width: 600px; margin-left: 200px;",
+                   showOutput("funding_plot", "nvd3")
+          )
+        ),
+        box(
+          title = "Time and Budget Plot",
+          solidHeader = TRUE,
+          status = "primary",
+          width = NULL,
+          
+          
+          timevisOutput("longevity_plot")
+        )
+        
+      )
     ),
     tabItem(
       tabName = 'budget',
@@ -149,7 +186,7 @@ server <- function(input, output) {
       }
     })
   
-  output$longevity_menu <-
+  output$budget_menu <-
     renderMenu({
       okay <- ok()
       if(okay){
@@ -369,6 +406,120 @@ server <- function(input, output) {
                   choices = letters)
     }
   })
+  
+  output$funding_plot <- renderChart({
+    
+    # Reshape portfolio_mat into a "long" dataset (better for plotting)
+    portfolio_mat_data <- as.data.frame(portfolio_mat)
+    names(portfolio_mat_data) <- as.Date(paste0(quarters, '-15'),
+                                         format = '%b-%y-%d')
+    portfolio_mat_data$key <- row.names(portfolio_mat_data)
+    portfolio_mat_data <- 
+      tidyr::gather(portfolio_mat_data, date, value, 1:(ncol(portfolio_mat_data)-1))
+    portfolio_mat_data$date <- as.Date(portfolio_mat_data$date)
+    
+    # Filter data to only include the date range from the timevis chart
+    tr <- longevity_plot_range()
+    if(!is.null(tr)){
+      tr <- as.Date(tr)
+      portfolio_mat_data <-
+        portfolio_mat_data %>%
+        filter(between(date, tr[1], tr[2]))
+    } else {
+      tr <- as.Date(c('2015-01-15',
+                      '2016-01-15'))
+    }
+    
+    # "Expand" the data so that there are 0s at the dates of interest
+    left <- expand.grid(date = seq(as.Date(paste0(format(as.Date(tr[1]), '%Y-%m'), '-15')),
+                                   as.Date(paste0(format(as.Date(tr[2]), '%Y-%m'), '-15')),
+                                   by = 'month'),
+                        key = unique(portfolio_mat_data$key))
+    # Capture the date range of the portfolio_mat_data
+    date_range <- range(portfolio_mat_data$date)
+    portfolio_mat_data <-
+      left_join(left, portfolio_mat_data,
+                by = c('key', 'date')) %>%
+      # If within date range and empty, remove; if outside, keep
+      filter(date <= date_range[1] | date >= date_range[2] | !is.na(value)) %>%
+      mutate(date = format(date, '%Y-%m'))
+    n1 <- nPlot(value ~ date, group = "key", data = portfolio_mat_data, type = "multiBarChart", width = 500, dom = 'funding_plot')
+    n1$chart(stacked = TRUE)
+    # n1$xAxis(
+    #   tickFormat =
+    #     "#! function(d) {
+    #     return d3.time.format('%b %Y')(new Date(d * 24 * 60 * 60 * 1000))
+    # } !#"
+    # )
+    return(n1)
+  })
+  
+  # Capture the parameters of the longevity plot
+  longevity_plot_range <- reactive({
+    x <- input$longevity_plot_window
+    if(is.null(x)){
+      return(NULL)
+    } else {
+      x <- as.Date(as.POSIXct(x))
+      as.character(x)
+    }
+  })
+  
+  # Render a longevity plot
+  output$longevity_plot <- renderTimevis({
+    data_subset <- longevity_data
+    # Carry out lots of filtering here once inputs are created
+    timevis_data <- data.frame(
+      id = data_subset$project_id,
+      group = data_subset$project_id,
+      title = data_subset$project_name,
+      content = "",
+      start = data_subset$graph_start_date,
+      end = data_subset$project_end_date,
+      style = paste0("background-color: ", data_subset$color, "; height: 12px"),
+      type = 'range',
+      stringsAsFactors = FALSE
+    )
+    
+    group_data <- data.frame(
+      id = data_subset$project_id,
+      content = data_subset$html,
+      title = data_subset$project_name,
+      style = "font-size: 12px; height: 15px;",
+      ID = seq.int(nrow(data_subset)),
+      stringsAsFactors = FALSE
+    )
+    
+    #add end of fiscal year element
+    efy <- data.frame(
+      id = 0,
+      group = NA,
+      title = "End of Fiscal Year",
+      content = "",
+      start = end_fiscal_year,
+      end = end_fiscal_year + 7,
+      style = "background-color: red;",
+      type = 'background',
+      stringsAsFactors = FALSE
+    )
+    timevis_data <- rbind(timevis_data, efy)
+
+    timeline <- timevis(timevis_data, groups = group_data, showZoom = FALSE, fit = FALSE,
+                        options = list(zoomable = FALSE, 
+                                       horizontalScroll = FALSE,
+                                       timeAxis = list(scale = 'month', step = 6),
+                                       orientation = 'both',
+                                       groupOrder = "ID",
+                                       showCurrentTime = FALSE,
+                                       autoResize = TRUE,
+                                       start = as.Date("2015-01-01"),
+                                       end = as.Date("2020-01-01")
+                        )
+    ) %>% addCustomTime(longevity_data$dataset_date[1], "datadate")
+    timeline
+})
+  
+  
 }
 
 shinyApp(ui, server)
