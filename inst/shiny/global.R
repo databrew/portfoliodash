@@ -10,9 +10,6 @@
 
 # Give more memory to java environment (not required when loading data from local csv)
 #options(java.parameters = "- Xmx2048m")
-
-
-
 library(xlsx)
 library(shiny)
 library(shinydashboard)
@@ -20,6 +17,24 @@ library(timevis)
 library(rCharts)
 library(dplyr)
 library(tidyr)
+library(RPostgreSQL)
+
+# Read in the as portfolio table directly from the database
+quick_load <- TRUE
+if('as_portfolio.RData' %in% dir() & quick_load){
+  load('as_portfolio.RData')
+} else {
+  co <- src_postgres(dbname = 'portfolio')
+  as_portfolio <- portfoliodash::get_data(query = NULL,
+                                          tab = 'as_portfolio',
+                                          dbname = 'portfolio',
+                                          connection_object = co)
+  # Keep only a few for now
+  as_portfolio <- sample_n(as_portfolio, 200)
+  save(as_portfolio, file = 'as_portfolio.RData')
+}
+
+
 
 
 # Set working directory

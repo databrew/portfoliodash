@@ -8,8 +8,9 @@ library(RColorBrewer)
 source('global.R')
 
 # Define acceptable password username combinations
-users <- data.frame(username = letters[1:5],
-                    password = 1:5)
+# library(portfoliodash)
+# users <- portfoliodash::users # in packagified form
+load('../../data/users.rda')
 
 # Height for main page charts
 main_page_plot_height_num <- 250
@@ -63,6 +64,7 @@ sidebar <- dashboardSidebar(
     uiOutput('password_ui'),
     h6(textOutput('incorrect_password_text')),
     uiOutput('submit_ui'),
+    menuItemOutput('configure_menu'),
     menuItemOutput('longevity_menu'),
     menuItemOutput('budget_menu'),
     menuItemOutput('flag_view_menu'),
@@ -95,6 +97,24 @@ body <- dashboardBody(
       uiOutput('welcome_page'),
       uiOutput('main_page')
         )
+    ),
+    tabItem(
+      tabName = 'configure',
+      fluidPage(
+        fluidRow(
+          shinydashboard::box(
+            tags$p(style = "font-size: 20px;",
+                   'Some controls will go here'
+            ),
+            title = 'Controls',
+            status = 'warning',
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            collapsed = FALSE,
+            width = 12
+          )
+        )
+      )
     ),
     tabItem(
       tabName = 'longevity',
@@ -322,6 +342,16 @@ server <- function(input, output) {
         tabName="main",
         icon=icon("eye"))
       # }
+    })
+  output$configure_menu <-
+    renderMenu({
+      okay <- ok()
+      if(okay){
+        menuItem(
+          text="Configure portfolio",
+          tabName="configure",
+          icon=icon("envelope-open"))
+      }
     })
   
   output$longevity_menu <-
