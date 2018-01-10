@@ -5,4 +5,4 @@ inst/shiny/pub
 inst/shiny/old versions
 inst/shiny/rsconnect
 inst/shiny/as_portfolio.RData
-credentials
+credentials/credentials.yaml

@@ -6,8 +6,16 @@ A dashboard for the World Bank / IFC. Built in collaboration with [Databrew](htt
 To download this package, run the following in R.
 
 ```
-devtools::install_github('databrew/portfoliodash')
+> devtools::install_github('databrew/portfoliodash')
 ```
+
+Alternaitvely, if you're "administering" this app (ie, dealing directly with the database, etc.), you'll want to clone this repository, so that you can make modifications to some of the underlying code, data, and credentials. Do so like this:
+
+```
+$ git clone https://github.com/databrew/portfoliodash
+```
+
+Then `cd` into the `portfoliodash` directory. 
 
 ## Data sources
 
