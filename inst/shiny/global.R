@@ -35,26 +35,25 @@ if('as_portfolio.RData' %in% dir() & quick_load){
   save(as_portfolio, file = 'as_portfolio.RData')
 }
 
-if('user_portfolio.RData' %in% dir() & quick_load){
-  load('user_portfolio.RData')
-} else {
+# if('user_portfolio.RData' %in% dir() & quick_load){
+#   load('user_portfolio.RData')
+# } else {
   co <- src_postgres(dbname = 'portfolio')
   user_portfolio <- portfoliodash::get_data(query = NULL,
                                           tab = 'user_portfolio',
                                           dbname = 'portfolio',
                                           connection_object = co)
-  # Keep only a few for now
-  save(user_portfolio, file = 'user_portfolio.RData')
-}
+#   # Keep only a few for now
+#   save(user_portfolio, file = 'user_portfolio.RData')
+# }
+user_portfolio_static <- user_portfolio
 
 
 # Define filter choices
 filter_choices <- c('Is (among)',
                     'Is not (among)',
                     'Is greater than',
-                    'Is greater than or equal to',
-                    'Is less than',
-                    'Is less than or equal to')
+                    'Is less than')
 filter_choices_character <- c('Is (among)', 'Is not (among)')
 '%!in%' <- function(x,y)!('%in%'(x,y))
 operator_dictionary <- 

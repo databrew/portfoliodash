@@ -12,6 +12,8 @@ source('global.R')
 # users <- portfoliodash::users # in packagified form
 load('../../data/users.rda')
 source('../../R/filter_portfolio.R')
+source('../../R/update_db.R')
+source('../../R/prettify.R')
 
 # Height for main page charts
 main_page_plot_height_num <- 250
@@ -58,6 +60,7 @@ g3 <- ggplot(data = df %>% filter(key == 'a',
 header <- dashboardHeader(title="Portfolio Dashboard")
 sidebar <- dashboardSidebar(
   sidebarMenu(
+    id = 'tabs',
     h4(textOutput('submit_text'), align = 'center'),
     h3(textOutput('submit_text_below'), align = 'center'),
     menuItemOutput('main_menu'),
@@ -163,21 +166,28 @@ body <- dashboardBody(
             solidHeader = TRUE,
             collapsible = TRUE,
             collapsed = FALSE,
-            width = 12
-          )
+            width = 12)
         ),
         fluidRow(
           shinydashboard::box(
-            DT::dataTableOutput('portfolio_table'),
-            title = 'Your portfolio',
+            DT::dataTableOutput('old_portfolio_table'),
+            title = 'Your old portfolio',
             status = 'warning',
             solidHeader = TRUE,
             collapsible = TRUE,
             collapsed = FALSE,
-            width = 12
-          )
-        )
+            width = 12)),
+        fluidRow(
+          shinydashboard::box(
+            DT::dataTableOutput('new_portfolio_table'),
+            title = 'Your new portfolio',
+            status = 'warning',
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            collapsed = FALSE,
+            width = 12))
       )
+    
     ),
     tabItem(
       tabName = 'longevity',
@@ -606,29 +616,46 @@ server <- function(input, output) {
   
     
   # Reactive users portfolio, based on filters
-  this_portfolio <- reactiveValues(data = as_portfolio)
+  new_portfolio <- reactiveValues(data = as_portfolio)
+  old_portfolio <- reactiveValues(data = as_portfolio)
+  user_portfolio <- reactiveValues(data = user_portfolio_static)
+  observeEvent(input$filter_save_button,{
+    Sys.sleep(0.3)
+    user_portfolio$data <-
+      portfoliodash::get_data(query = NULL,
+                              tab = 'user_portfolio',
+                              dbname = 'portfolio',
+                              connection_object = co)
+  })
   # Update the portfolio upon log-in
-  observeEvent(input$submit, {
+  observeEvent({
+    input$submit
+    input$tabs
+    log_out
+  }, {
+    message(paste0('Selected tab is: ', input$tabs))
     if(ok()){
       uu <- user()
       if(!is.null(uu)){
         these_projects  <-
-          user_portfolio %>%
+          user_portfolio$data %>%
           filter(username == uu) %>%
           .$project_id
-        this_portfolio$data <- 
+        x <- 
           as_portfolio %>%
           filter(project_id %in% these_projects)
+        new_portfolio$data <- x
+        old_portfolio$data <- x
       }
     }
   })
   
   # Clear the portfolio and start from scratch upon restart
   observeEvent(input$filter_restart_button, {
-    this_portfolio$data <- 
+    new_portfolio$data <- 
       as_portfolio
   })
-  
+
   # Create reactive filters
   filter_a <- reactive({
     make_filter(variable = input$filter_1,
@@ -654,8 +681,10 @@ server <- function(input, output) {
   output$portfolio_size_text <-
     renderText({
       paste0('Your current portfolio has ',
-             nrow(this_portfolio$data),
-             ' projects.')
+             nrow(old_portfolio$data),
+             ' projects.\n Your new portfolio would have ',
+             nrow(new_portfolio$data),
+              ' projects.')
     })
   
   # Create a vector of filter conditions
@@ -671,27 +700,37 @@ server <- function(input, output) {
   
   # Apply filters when the apply filter button is clicked
   observeEvent(input$filter_action_button, {
-    x <- this_portfolio$data
+    x <- new_portfolio$data
     # Get filter conditions
     fc <- filter_conditions()
     y <- do.call(filter_portfolio,
                  c(list(portfolio = x),
                    fc))
-    this_portfolio$data <- y
+    new_portfolio$data <- y
   })
   
   observeEvent(input$filter_save_button, {
     print('Saving')
-    # Delete the old data from the database
-   
-    # Add the new data to the database
+    uu <- user()
+    pids <- new_portfolio$data
+    pids <- pids$project_id
+    update_db(u = uu,
+              project_ids = pids)
   })
   
-  output$portfolio_table <-
+  output$new_portfolio_table <-
     DT::renderDataTable({
       if(ok()){
-        x <- this_portfolio$data
-        x
+        x <- new_portfolio$data
+        prettify(x, download_options = TRUE)
+      }
+    },
+    options = list(scrollX = TRUE))
+  output$old_portfolio_table <-
+    DT::renderDataTable({
+      if(ok()){
+        x <- old_portfolio$data
+        prettify(x, download_options = TRUE)
       }
     },
     options = list(scrollX = TRUE))
