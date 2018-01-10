@@ -20,7 +20,7 @@
 #' @param password The password If \code{NULL}
 #' the function will try to use the \code{pqssword} in your \code{connection_object}; if the \code{connection_object} is \code{NULL}, the function will
 #' try to create a \code{connection_object} as described below.
-#' @param connection_object An open connection to a CISM database (as created through \code{credentials_extract} and \code{credentials_connect} or \code{credentials_now}); if \code{NULL}, the function will try to create a \code{connection_object} by retrieving user information from the \code{credentials/credentials.yaml}
+#' @param connection_object An open connection to adatabase (as created through \code{credentials_extract} and \code{credentials_connect} or \code{credentials_now}); if \code{NULL}, the function will try to create a \code{connection_object} by retrieving user information from the \code{credentials/credentials.yaml}
 #' in or somewhere upwards of the working directory.
 #' @param collect Whether to collect into memory (using dplyr's \code{connect}
 #' function) the result or not
