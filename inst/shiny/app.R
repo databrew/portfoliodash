@@ -107,13 +107,10 @@ body <- dashboardBody(
             tags$p(style = "font-size: 20px;",
                    'Pick up to 4 fields for filtering your portfolio'
             ),
-            # fluidRow(textOutput('filter_text')),
-            fluidRow(column(3),
-                     column(6,
-                            h4('Your current portfolio has ',
-                               textOutput('portfolio_size_text'),
-                               ' projects.')),
-                     column(3)),
+            fluidRow(column(2),
+                     column(8,
+                            h4(textOutput('ext'))),
+                     column(2)),
             fluidRow(column(3,
                    selectInput('filter_1',
                                'Filter 1',
@@ -182,19 +179,6 @@ body <- dashboardBody(
     tabItem(
       tabName = 'longevity',
       fluidPage(
-        fluidRow(
-          shinydashboard::box(
-            tags$p(style = "font-size: 20px;",
-                   'Some controls will go here'
-            ),
-            title = 'Controls',
-            status = 'warning',
-            solidHeader = TRUE,
-            collapsible = TRUE,
-            collapsed = FALSE,
-            width = 12
-          )
-        ),
         box(
           title = "Funding Chart",
           solidHeader = TRUE,
@@ -648,12 +632,10 @@ server <- function(input, output) {
   
   output$portfolio_size_text <-
     renderText({
-      nrow(this_portfolio$data)
+      paste0('Your current portfolio has ',
+             nrow(this_portfolio$data),
+             ' projects.')
     })
-  
-  # output$filter_text <- renderText({
-  #          paste0('All filters is ', paste0(filter_conditions(), collapse = ' | '), collapse = ' ')
-  # })
   
   # Create a vector of filter conditions
   filter_conditions <- reactive({
