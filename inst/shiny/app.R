@@ -11,6 +11,7 @@ source('global.R')
 # library(portfoliodash)
 # users <- portfoliodash::users # in packagified form
 load('../../data/users.rda')
+source('../../R/filter_portfolio.R')
 
 # Height for main page charts
 main_page_plot_height_num <- 250
@@ -106,10 +107,13 @@ body <- dashboardBody(
             tags$p(style = "font-size: 20px;",
                    'Pick up to 4 fields for filtering your portfolio'
             ),
-            # fluidRow(column(6,
-            #                 h4('OR fields', align = 'center')),
-            #          column(6,
-            #                 h4('AND fields', align = 'center'))),
+            # fluidRow(textOutput('filter_text')),
+            fluidRow(column(3),
+                     column(6,
+                            h4('Your current portfolio has ',
+                               textOutput('portfolio_size_text'),
+                               ' projects.')),
+                     column(3)),
             fluidRow(column(3,
                    selectInput('filter_1',
                                'Filter 1',
@@ -350,27 +354,44 @@ server <- function(input, output) {
   
   # Create reactive variables which are selected for filtering
   filter_var_1 <- reactive({
-    if(!ok()){NULL} else {var <- unlist(as_portfolio[,input$filter_1])}})
+    out <- NULL
+      if(ok() & !is.null(input$filter_1)){
+        out <- unlist(as_portfolio[,input$filter_1])
+      }
+    })
   filter_var_2 <- reactive({
-    if(!ok()){NULL} else {var <- unlist(as_portfolio[,input$filter_2])}})
+    out <- NULL
+    if(ok() & !is.null(input$filter_2)){
+      out <- unlist(as_portfolio[,input$filter_2])
+    }
+  })
   filter_var_3 <- reactive({
-    if(!ok()){NULL} else {var <- unlist(as_portfolio[,input$filter_3])}})
+    out <- NULL
+    if(ok() & !is.null(input$filter_3)){
+      out <- unlist(as_portfolio[,input$filter_3])
+    }
+  })
   filter_var_4 <- reactive({
-    if(!ok()){NULL} else {var <- unlist(as_portfolio[,input$filter_4])}})
-  
+    out <- NULL
+    if(ok() & !is.null(input$filter_4)){
+      out <- unlist(as_portfolio[,input$filter_4])
+    }
+  })
   # Generate filters b, if filters a are selected
   output$filter_1_b <- renderUI({
     if(!ok()){
       NULL
     } else {
       # See if filter a is something other than ''
-      if(input$filter_1 != ''){
-        if(classify(filter_var_1()) == 'character'){
-          choices <- filter_choices_character} else { choices <- filter_choices
-          }
-        selectInput('filter_1_b_in',
-                    'Operation',
-                    choices = choices)
+      if(!is.null(input$filter_1)){
+        if(input$filter_1 != ''){
+          if(classify(filter_var_1()) == 'character'){
+            choices <- filter_choices_character} else { choices <- filter_choices
+            }
+          selectInput('filter_1_b_in',
+                      'Operation',
+                      choices = choices)
+        }
       }
     }
   })
@@ -379,13 +400,15 @@ server <- function(input, output) {
       NULL
     } else {
       # See if filter a is something other than ''
-      if(input$filter_2 != ''){
-        if(classify(filter_var_2()) == 'character'){
-          choices <- filter_choices_character} else { choices <- filter_choices
-          }
-        selectInput('filter_2_b_in',
-                    'Operation',
-                    choices = choices)
+      if(!is.null(input$filter_2)){
+        if(input$filter_2 != ''){
+          if(classify(filter_var_2()) == 'character'){
+            choices <- filter_choices_character} else { choices <- filter_choices
+            }
+          selectInput('filter_2_b_in',
+                      'Operation',
+                      choices = choices)
+        }
       }
     }
   })
@@ -394,13 +417,15 @@ server <- function(input, output) {
       NULL
     } else {
       # See if filter a is something other than ''
-      if(input$filter_3 != ''){
-        if(classify(filter_var_3()) == 'character'){
-          choices <- filter_choices_character} else { choices <- filter_choices
-          }
-        selectInput('filter_3_b_in',
-                    'Operation',
-                    choices = choices)
+      if(!is.null(input$filter_3)){
+        if(input$filter_3 != ''){
+          if(classify(filter_var_3()) == 'character'){
+            choices <- filter_choices_character} else { choices <- filter_choices
+            }
+          selectInput('filter_3_b_in',
+                      'Operation',
+                      choices = choices)
+        }
       }
     }
   })
@@ -409,13 +434,15 @@ server <- function(input, output) {
       NULL
     } else {
       # See if filter a is something other than ''
-      if(input$filter_4 != ''){
-        if(classify(filter_var_4()) == 'character'){
-          choices <- filter_choices_character} else { choices <- filter_choices
-          }
-        selectInput('filter_4_b_in',
-                    'Operation',
-                    choices = choices)
+      if(!is.null(input$filter_4)){
+        if(input$filter_4 != ''){
+          if(classify(filter_var_4()) == 'character'){
+            choices <- filter_choices_character} else { choices <- filter_choices
+            }
+          selectInput('filter_4_b_in',
+                      'Operation',
+                      choices = choices)
+        }
       }
     }
   })
@@ -592,23 +619,62 @@ server <- function(input, output) {
   })
   
   # Clear the portfolio and start from scratch upon restart
-  observeEvent(input$filter_restart, {
+  observeEvent(input$filter_restart_button, {
     this_portfolio$data <- 
       as_portfolio
   })
   
-  #
+  # Create reactive filters
+  filter_a <- reactive({
+    make_filter(variable = input$filter_1,
+                operator = input$filter_1_b_in,
+                selection = input$filter_1_c_in)
+  })
+  filter_b <- reactive({
+    make_filter(variable = input$filter_2,
+                operator = input$filter_2_b_in,
+                selection = input$filter_2_c_in)
+  })
+  filter_c <- reactive({
+    make_filter(variable = input$filter_3,
+                operator = input$filter_3_b_in,
+                selection = input$filter_3_c_in)
+  })
+  filter_d <- reactive({
+    make_filter(variable = input$filter_4,
+                operator = input$filter_4_b_in,
+                selection = input$filter_4_c_in)
+  })
+  
+  output$portfolio_size_text <-
+    renderText({
+      nrow(this_portfolio$data)
+    })
+  
+  # output$filter_text <- renderText({
+  #          paste0('All filters is ', paste0(filter_conditions(), collapse = ' | '), collapse = ' ')
+  # })
+  
+  # Create a vector of filter conditions
+  filter_conditions <- reactive({
+    f1 <- filter_a()
+    f2 <- filter_b()
+    f3 <- filter_c()
+    f4 <- filter_d()
+    fs <- c(f1, f2, f3, f4)
+    fs <- fs[!fs %in% c('', "c('')")]
+    return(fs)
+  })
   
   # Apply filters when the apply filter button is clicked
-  observeEvent(input$filter_action, {
+  observeEvent(input$filter_action_button, {
     x <- this_portfolio$data
-    filter_conditions <- c()
-    # Add to the filter conditions, based on the filters from the portfolio management tab
-    # filter_conditions <- c('fcs_total_funds_managed_by_ifc == 0',
-    #                        'climate_adaptation_pct == 15')
+    # Get filter conditions
+    fc <- filter_conditions()
     y <- do.call(filter_portfolio,
                  c(list(portfolio = x),
-                   filter_conditions))
+                   fc))
+    this_portfolio$data <- y
   })
   
   output$portfolio_table <-

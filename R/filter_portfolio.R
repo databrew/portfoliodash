@@ -17,9 +17,14 @@ filter_portfolio <- function(portfolio, ...){
   }
   arguments <- arguments[2:length(arguments)]
   arguments <- unlist(arguments)
-  for(i in 1:length(arguments)){
-    portfolio <- portfolio %>%
-      dplyr::filter_(arguments[i])
-  }
+  arguments <- paste0(arguments, collapse = ' | ')
+  
+  portfolio <- portfolio %>%
+    dplyr::filter_(arguments)
+  # To treat as and statements
+  # for(i in 1:length(arguments)){
+  #   portfolio <- portfolio %>%
+  #     dplyr::filter_(arguments[i])
+  # }
   return(portfolio)
 }

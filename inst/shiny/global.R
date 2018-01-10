@@ -54,6 +54,20 @@ filter_choices <- c('Is greater than',
                     'Is any of',
                     'Is not')
 filter_choices_character <- c('Is', 'Is any of', 'Is not', 'Is not among')
+'%!in%' <- function(x,y)!('%in%'(x,y))
+operator_dictionary <- 
+  data_frame(name = c('Is greater than',
+                        'Is less than',
+                        'Is',
+                        'Is any of',
+                        'Is not',
+                        'Is not among'),
+             operator = c('>',
+                          '<',
+                          '==',
+                          '%in%',
+                          '!=',
+                          '%!in%'))
 classify <- function(x){
   x <- class(x)
   x <- ifelse(x == 'integer', 'numeric', 
@@ -62,6 +76,17 @@ classify <- function(x){
   return(x)
 }
 filter_classes <- unlist(lapply(as_portfolio, classify))
+make_filter <- function(variable, operator, selection){
+  operator <- operator_dictionary$operator[operator_dictionary$name == operator]
+  if(!is.numeric(selection[1])){
+    selection <- paste0('c(', paste0(paste0("'", selection, "'"), collapse = ', '), ')')
+  } else {
+    selection <- paste0('c(', paste0(selection, collapse = ', '), ')')
+  }
+  
+  paste0(variable, operator, selection, collapse = ' ')
+}
+
 
 # Set working directory
 # Two options depending on how OneDrive files are stored on the local machine
