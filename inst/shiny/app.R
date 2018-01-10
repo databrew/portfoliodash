@@ -176,7 +176,7 @@ body <- dashboardBody(
             status = 'warning',
             solidHeader = TRUE,
             collapsible = TRUE,
-            collapsed = FALSE,
+            collapsed = TRUE,
             width = 12)),
         fluidRow(
           shinydashboard::box(
@@ -185,7 +185,7 @@ body <- dashboardBody(
             status = 'warning',
             solidHeader = TRUE,
             collapsible = TRUE,
-            collapsed = FALSE,
+            collapsed = TRUE,
             width = 12))
       )
     
