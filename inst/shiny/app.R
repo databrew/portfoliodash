@@ -479,24 +479,26 @@ server <- function(input, output) {
             solidHeader = TRUE,
             status = "primary",
             height = main_page_plot_height)),
-        fluidRow(valueBox(value = 1, 
-                          subtitle = 'Active projects', 
-                          icon = NULL, 
-                          color = "orange", 
-                          width = 4,
-                          href = NULL),
-                 valueBox(value = 1, 
-                          subtitle = 'Average burn rates', 
-                          icon = NULL, 
-                          color = "orange", 
-                          width = 4,
-                          href = NULL),
-                 valueBox(value = 1, 
-                          subtitle = 'Average project size', 
-                          icon = NULL, 
-                          color = "orange", 
-                          width = 4,
-                          href = NULL))
+        fluidRow(
+          valueBox(
+            subtitle = "Active Projects", 
+            value = paste0(nrow(longevity_data[longevity_data$active == 1,])), 
+            icon = icon("list"),
+            color = "orange"
+          ),
+          valueBox(
+            subtitle = "Burn Rate", 
+            value = sprintf("%.1f %%", mean(longevity_data[,"burn_rate"])), 
+            icon = icon("percent"),
+            color = "orange"
+          ),
+          valueBox(
+            subtitle = "Avg Project Size", 
+            value = paste0("$", sprintf("%.1f", mean(longevity_data[,"prorated_total_funds_managed_by_ifc"]/1000000)), "M"), 
+            icon = icon("bar-chart"),
+            color = "green"
+          )
+        )
       )
     }
   })
