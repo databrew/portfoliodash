@@ -19,7 +19,10 @@ library(dplyr)
 library(tidyr)
 library(RPostgreSQL)
 library(Hmisc)
+library(yaml)
+library(RPostgreSQL)
 
+local <- grepl('joebrew', getwd())
 # Read in the as portfolio table directly from the database
 quick_load <- TRUE
 if('as_portfolio.RData' %in% dir() & quick_load){
@@ -35,17 +38,16 @@ if('as_portfolio.RData' %in% dir() & quick_load){
   save(as_portfolio, file = 'as_portfolio.RData')
 }
 
-# if('user_portfolio.RData' %in% dir() & quick_load){
-#   load('user_portfolio.RData')
-# } else {
+if(!local){
+  load('user_portfolio.RData')
+} else {
   co <- src_postgres(dbname = 'portfolio')
   user_portfolio <- portfoliodash::get_data(query = NULL,
-                                          tab = 'user_portfolio',
-                                          dbname = 'portfolio',
-                                          connection_object = co)
-#   # Keep only a few for now
-#   save(user_portfolio, file = 'user_portfolio.RData')
-# }
+                                            tab = 'user_portfolio',
+                                            dbname = 'portfolio',
+                                            connection_object = co)
+}
+
 user_portfolio_static <- user_portfolio
 
 

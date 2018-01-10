@@ -94,7 +94,7 @@ get_data <- function(query = NULL,
 
   if(collect){
     # Collect
-    return_object <- collect(return_object,
+    return_object <- dplyr::collect(return_object,
                              n = Inf)
   }
 

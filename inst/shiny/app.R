@@ -11,9 +11,10 @@ source('global.R')
 # library(portfoliodash)
 # users <- portfoliodash::users # in packagified form
 load('../../data/users.rda')
-source('../../R/filter_portfolio.R')
-source('../../R/update_db.R')
-source('../../R/prettify.R')
+package_files <- dir('../../R')
+for(i in 1:length(package_files)){
+  source(paste0('../../R/', package_files[i]))
+}
 
 # Height for main page charts
 main_page_plot_height_num <- 250
@@ -621,17 +622,22 @@ server <- function(input, output) {
   user_portfolio <- reactiveValues(data = user_portfolio_static)
   observeEvent(input$filter_save_button,{
     Sys.sleep(0.3)
-    user_portfolio$data <-
-      portfoliodash::get_data(query = NULL,
-                              tab = 'user_portfolio',
-                              dbname = 'portfolio',
-                              connection_object = co)
+    if(local){
+      user_portfolio$data <-
+        portfoliodash::get_data(query = NULL,
+                                tab = 'user_portfolio',
+                                dbname = 'portfolio',
+                                connection_object = co)
+    } else {
+      user_portfolio$data <-
+        user_portfolio_static
+    }
   })
   # Update the portfolio upon log-in
   observeEvent({
     input$submit
     input$tabs
-    log_out
+    input$log_out
   }, {
     message(paste0('Selected tab is: ', input$tabs))
     if(ok()){
@@ -714,8 +720,12 @@ server <- function(input, output) {
     uu <- user()
     pids <- new_portfolio$data
     pids <- pids$project_id
-    update_db(u = uu,
-              project_ids = pids)
+    if(local){
+      update_db(u = uu,
+                project_ids = pids)
+    } else {
+      warning('No access to a database. Not actually updating.')
+    }
   })
   
   output$new_portfolio_table <-
