@@ -104,29 +104,30 @@ body <- dashboardBody(
       fluidPage(
         fluidRow(
           shinydashboard::box(
-            tags$p(style = "font-size: 20px;",
+            tags$p(style = "font-size: 28px",
                    'Pick up to 4 fields for filtering your portfolio'
             ),
-            fluidRow(column(2),
-                     column(8,
-                            h4(textOutput('ext'))),
-                     column(2)),
+            fluidRow(column(12, h3(textOutput('portfolio_size_text')))),
             fluidRow(column(3,
                    selectInput('filter_1',
                                'Filter 1',
-                               choices = c('', names(as_portfolio)))),
+                               choices = c('', var_choices),
+                               selected = '')),
             column(3,
                    selectInput('filter_2',
                                'Filter 2',
-                               choices = c('', names(as_portfolio)))),
+                               choices = c('', var_choices),
+                               selected = '')),
             column(3,
                    selectInput('filter_3',
                                'Filter 3',
-                               choices = c('', names(as_portfolio)))),
+                               choices = c('', var_choices),
+                               selected = '')),
             column(3,
                    selectInput('filter_4',
                                'Filter 4',
-                               choices = c('', names(as_portfolio))))),
+                               choices = c('', var_choices),
+                               selected = ''))),
             fluidRow(
               column(3, uiOutput('filter_1_b')),
               column(3, uiOutput('filter_2_b')),
@@ -151,9 +152,11 @@ body <- dashboardBody(
               column(1)
             ),
             fluidRow(
-              column(5),
+              column(3),
               column(2, uiOutput('filter_restart')),
-              column(5)
+              column(2),
+              column(2, uiOutput('filter_save')),
+              column(3)
             ),
             title = 'Controls',
             status = 'warning',
@@ -361,6 +364,13 @@ server <- function(input, output) {
       out <- unlist(as_portfolio[,input$filter_4])
     }
   })
+  
+  # Restart the filter selection upon a re-start
+  # filter_selection <- reactiveVal(value = '')
+  # observeEvent(input$filter_restart_button, {
+  #   filter_selection('')
+  # })
+  # 
   # Generate filters b, if filters a are selected
   output$filter_1_b <- renderUI({
     if(!ok()){
@@ -583,6 +593,17 @@ server <- function(input, output) {
     }
   })
   
+  output$filter_save <- renderUI({
+    if(!ok()){
+      NULL
+    } else {
+      actionButton('filter_save_button',
+                   'Save your portfolio',
+                   icon = icon('binoculars'))
+      
+    }
+  })
+  
     
   # Reactive users portfolio, based on filters
   this_portfolio <- reactiveValues(data = as_portfolio)
@@ -657,6 +678,13 @@ server <- function(input, output) {
                  c(list(portfolio = x),
                    fc))
     this_portfolio$data <- y
+  })
+  
+  observeEvent(input$filter_save_button, {
+    print('Saving')
+    # Delete the old data from the database
+   
+    # Add the new data to the database
   })
   
   output$portfolio_table <-

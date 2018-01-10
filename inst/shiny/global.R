@@ -18,6 +18,7 @@ library(rCharts)
 library(dplyr)
 library(tidyr)
 library(RPostgreSQL)
+library(Hmisc)
 
 # Read in the as portfolio table directly from the database
 quick_load <- TRUE
@@ -48,25 +49,26 @@ if('user_portfolio.RData' %in% dir() & quick_load){
 
 
 # Define filter choices
-filter_choices <- c('Is greater than',
+filter_choices <- c('Is (among)',
+                    'Is not (among)',
+                    'Is greater than',
+                    'Is greater than or equal to',
                     'Is less than',
-                    'Is',
-                    'Is any of',
-                    'Is not')
-filter_choices_character <- c('Is', 'Is any of', 'Is not', 'Is not among')
+                    'Is less than or equal to')
+filter_choices_character <- c('Is (among)', 'Is not (among)')
 '%!in%' <- function(x,y)!('%in%'(x,y))
 operator_dictionary <- 
   data_frame(name = c('Is greater than',
+                      'Is greater than or equal to',
+                      'Is less than or equal to',
                         'Is less than',
-                        'Is',
-                        'Is any of',
-                        'Is not',
-                        'Is not among'),
+                        'Is (among)',
+                        'Is not (among)'),
              operator = c('>',
+                          '>=',
+                          '<=',
                           '<',
-                          '==',
                           '%in%',
-                          '!=',
                           '%!in%'))
 classify <- function(x){
   x <- class(x)
@@ -87,7 +89,10 @@ make_filter <- function(variable, operator, selection){
   paste0(variable, operator, selection, collapse = ' ')
 }
 
-
+var_choices <- names(as_portfolio)
+var_choices <- var_choices[!grepl('_id', var_choices, fixed = TRUE)]
+var_choices_labels <- Hmisc::capitalize(gsub('_', ' ', var_choices))
+names(var_choices) <- var_choices_labels
 # Set working directory
 # Two options depending on how OneDrive files are stored on the local machine
 
