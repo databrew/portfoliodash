@@ -34,8 +34,34 @@ if('as_portfolio.RData' %in% dir() & quick_load){
   save(as_portfolio, file = 'as_portfolio.RData')
 }
 
+if('user_portfolio.RData' %in% dir() & quick_load){
+  load('user_portfolio.RData')
+} else {
+  co <- src_postgres(dbname = 'portfolio')
+  user_portfolio <- portfoliodash::get_data(query = NULL,
+                                          tab = 'user_portfolio',
+                                          dbname = 'portfolio',
+                                          connection_object = co)
+  # Keep only a few for now
+  save(user_portfolio, file = 'user_portfolio.RData')
+}
 
 
+# Define filter choices
+filter_choices <- c('Is greater than',
+                    'Is less than',
+                    'Is',
+                    'Is any of',
+                    'Is not')
+filter_choices_character <- c('Is', 'Is any of', 'Is not', 'Is not among')
+classify <- function(x){
+  x <- class(x)
+  x <- ifelse(x == 'integer', 'numeric', 
+              ifelse(x == 'factor', 'character',
+                     x))
+  return(x)
+}
+filter_classes <- unlist(lapply(as_portfolio, classify))
 
 # Set working directory
 # Two options depending on how OneDrive files are stored on the local machine
