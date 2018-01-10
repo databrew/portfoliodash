@@ -1,27 +1,43 @@
 # Portfolio dashboard
 A dashboard for the World Bank / IFC. Built in collaboration with [Databrew](http://datbrew.cc)
 
-## Downloading this package
+## Installing this package
 
-To download this package, run the following in R.
-
-```
-> devtools::install_github('databrew/portfoliodash')
-```
-
-Alternaitvely, if you're "administering" this app (ie, dealing directly with the database, etc.), you'll want to clone this repository, so that you can make modifications to some of the underlying code, data, and credentials. Do so like this:
+Clone this repository, so that you can make modifications to some of the underlying code, data, and credentials. Do so like this:
 
 ```
 $ git clone https://github.com/databrew/portfoliodash
 ```
 
-Then `cd` into the `portfoliodash` directory. 
+Then `cd` into the `portfoliodash` directory. You'll note a `credentials/credentials.yaml` file. This is set up to assume an accessible, non-password protected "portfolio" database. If your database requires credentials, is running on a specific port, etc, add to the file in this format:
 
-## Data sources
+```
+host: some.host.net
+port: 5230 # or some other port number
+user: ausername
+password: apassword
+```
 
-Data were emailed to developers on January 7, 2018. Data are downloadable (to authorized collaborators) at https://drive.google.com/open?id=1EtT8CmyL3XktXs49YXI-XhYtMcSfFhYY. 
+If you're using a version control system (like git), **be careful**: the `credentials/credentials.yaml` file is not explicitly git-ignored, so you should be sure not to `git add` it, less you risk exposing your credentials to people who shouldn't have them.
+
+Having now set up your credentials, document and install the package from within R like this (make sure you're in the "portfoliodash" directory):
+
+```
+library(devtools)
+document('.')
+install('.')
+```
+
+You'll now have the package on your system. You can confirm this by running:
+```
+library(portfoliodash)
+```
+
+Even though the library is set up, the app is not quite ready to run. Since some of the data is private, we don't store it as part of the library code - it needs to be set up separately. That's what the next section covers.
 
 ## Getting data  
+
+Data were emailed to developers on January 7, 2018. Data are downloadable (to authorized collaborators) at https://drive.google.com/open?id=1EtT8CmyL3XktXs49YXI-XhYtMcSfFhYY. 
 
 - Download the `as_portfolio (with data).zip` file from the above URL into the `data` directory of this repository.
 - Extract the `.zip` file's contents in place. 
