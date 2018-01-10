@@ -496,7 +496,27 @@ server <- function(input, output) {
             subtitle = "Avg Project Size", 
             value = paste0("$", sprintf("%.1f", mean(longevity_data[,"prorated_total_funds_managed_by_ifc"]/1000000)), "M"), 
             icon = icon("bar-chart"),
-            color = "green"
+            color = "orange"
+          )
+        ),
+        fluidRow(
+          valueBox(
+            subtitle = "Closed Projects", 
+            value = paste0(nrow(longevity_data[longevity_data$closed == 1,])), 
+            icon = icon("check"),
+            color = "blue"
+          ),
+          valueBox(
+            subtitle = "Total Portfolio Size", 
+            value = paste0("$", sprintf("%.1f", sum(longevity_data[,"prorated_total_funds_managed_by_ifc"]/1000000)), "M"), 
+            icon = icon("line-chart"),
+            color = "blue"
+          ),
+          valueBox(
+            subtitle = 'Some other indicator',
+            value = 123,
+            icon = icon('gears'),
+            color = 'blue'
           )
         )
       )
