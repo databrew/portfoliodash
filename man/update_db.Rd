@@ -4,14 +4,14 @@
 \alias{update_db}
 \title{Update DB}
 \usage{
-update_db(u, project_ids, connection_object = NULL)
+update_db(u, project_ids, the_co = NULL)
 }
 \arguments{
 \item{u}{The username of the person whose portfolio is being modified}
 
 \item{project_ids}{A vector of project_ids to be associated with that user}
 
-\item{connection_object}{An open connection to adatabase (as created through \code{credentials_extract} and \code{credentials_connect} or \code{credentials_now}); if \code{NULL}, the function will try to create a \code{connection_object} by retrieving user information from the \code{credentials/credentials.yaml}
+\item{the_co}{An open connection to adatabase (as created through \code{credentials_extract} and \code{credentials_connect} or \code{credentials_now}); if \code{NULL}, the function will try to create a \code{connection_object} by retrieving user information from the \code{credentials/credentials.yaml}
 in or somewhere upwards of the working directory.}
 }
 \value{

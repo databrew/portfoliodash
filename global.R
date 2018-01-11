@@ -35,7 +35,7 @@ if('as_portfolio.RData' %in% dir() & quick_load){
   load('as_portfolio.RData')
 } else {
   co <- src_postgres(dbname = 'portfolio')
-  as_portfolio <- portfoliodash::get_data(query = NULL,
+  as_portfolio <- get_data(query = NULL,
                                           tab = 'as_portfolio',
                                           dbname = 'portfolio',
                                           connection_object = co)
@@ -48,7 +48,7 @@ if(!local){
   load('user_portfolio.RData')
 } else {
   co <- src_postgres(dbname = 'portfolio')
-  user_portfolio <- portfoliodash::get_data(query = NULL,
+  user_portfolio <- get_data(query = NULL,
                                             tab = 'user_portfolio',
                                             dbname = 'portfolio',
                                             connection_object = co)
@@ -225,7 +225,8 @@ projects <- t(data.matrix(portfolio_data[,6]))
 
 # library(portfoliodash)
 # users <- portfoliodash::users # in packagified form
-load('data/users.rda')
+# load('data/users.rda')
+load('users.rda')
 package_files <- dir('R')
 for(i in 1:length(package_files)){
   source(paste0('R/', package_files[i]))
