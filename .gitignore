@@ -1,8 +1,5 @@
 data
-inst/shiny/*.csv
-inst/shiny/*.xlsm
-inst/shiny/pub
-inst/shiny/old versions
-inst/shiny/rsconnect
-inst/shiny/as_portfolio.RData
-inst/shiny/user_portfolio.RData
+rsconnect
+as_portfolio.RData
+user_portfolio.RData
+flat_files/

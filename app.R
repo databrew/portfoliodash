@@ -7,13 +7,12 @@ library(ggthemes)
 library(RColorBrewer)
 source('global.R')
 
-# Define acceptable password username combinations
 # library(portfoliodash)
 # users <- portfoliodash::users # in packagified form
-load('../../data/users.rda')
-package_files <- dir('../../R')
+load('data/users.rda')
+package_files <- dir('R')
 for(i in 1:length(package_files)){
-  source(paste0('../../R/', package_files[i]))
+  source(paste0('R/', package_files[i]))
 }
 
 # Height for main page charts
@@ -111,7 +110,7 @@ body <- dashboardBody(
             tags$p(style = "font-size: 28px",
                    'Pick up to 4 fields for filtering your portfolio'
             ),
-            fluidRow(column(12, h3(textOutput('portfolio_size_text')))),
+            fluidRow(column(12, helpText(textOutput('portfolio_size_text')))),
             fluidRow(column(3,
                    selectInput('filter_1',
                                'Filter 1',
@@ -156,12 +155,9 @@ body <- dashboardBody(
               column(1)
             ),
             fluidRow(
-              column(3),
-              column(2, uiOutput('filter_restart')),
-              column(2),
-              column(2, uiOutput('filter_save')),
-              column(3)
-            ),
+              column(4, uiOutput('filter_restart')),
+              column(4, uiOutput('filter_reboot')),
+              column(4, uiOutput('filter_save'))),
             title = 'Controls',
             status = 'warning',
             solidHeader = TRUE,
@@ -598,9 +594,20 @@ server <- function(input, output) {
       NULL
     } else {
         actionButton('filter_restart_button',
-                     'Start from scratch',
+                     'Undo changes since last save',
                      icon = icon('cubes'))
         
+    }
+  })
+  
+  output$filter_reboot <- renderUI({
+    if(!ok()){
+      NULL
+    } else {
+      actionButton('filter_reboot_button',
+                   'Start new portfolio from scratch',
+                   icon = icon('cubes'))
+      
     }
   })
   
@@ -609,7 +616,7 @@ server <- function(input, output) {
       NULL
     } else {
       actionButton('filter_save_button',
-                   'Save your portfolio',
+                   'Save your new portfolio',
                    icon = icon('binoculars'))
       
     }
@@ -620,24 +627,12 @@ server <- function(input, output) {
   new_portfolio <- reactiveValues(data = as_portfolio)
   old_portfolio <- reactiveValues(data = as_portfolio)
   user_portfolio <- reactiveValues(data = user_portfolio_static)
-  observeEvent(input$filter_save_button,{
-    Sys.sleep(0.3)
-    if(local){
-      user_portfolio$data <-
-        portfoliodash::get_data(query = NULL,
-                                tab = 'user_portfolio',
-                                dbname = 'portfolio',
-                                connection_object = co)
-    } else {
-      user_portfolio$data <-
-        user_portfolio_static
-    }
-  })
-  # Update the portfolio upon log-in
+  
+  # Update the old_portfolio at log-in, log-out and tab change
   observeEvent({
-    input$submit
-    input$tabs
     input$log_out
+    input$submit; 
+    input$tabs
   }, {
     message(paste0('Selected tab is: ', input$tabs))
     if(ok()){
@@ -652,12 +647,47 @@ server <- function(input, output) {
           filter(project_id %in% these_projects)
         new_portfolio$data <- x
         old_portfolio$data <- x
+        print('OBSERVED LOG IN OR TAB CHANGE')
+        print(nrow(old_portfolio$data))
       }
+    }
+  })
+  
+  observeEvent(input$filter_save_button,{
+    # Write to the database
+    uu <- user()
+    message('Saving new portfolio for ', uu)
+    pids <- new_portfolio$data
+    old_portfolio$data <- new_portfolio$data
+    pids <- pids$project_id
+    if(local){
+      update_db(u = uu,
+                project_ids = pids)
+    } else {
+      warning('No access to a database. Not actually updating.')
+    }
+    # Update the user_portfolio table
+    Sys.sleep(0.3)
+    if(local){
+      user_portfolio$data <-
+        portfoliodash::get_data(query = NULL,
+                                tab = 'user_portfolio',
+                                dbname = 'portfolio',
+                                connection_object = co)
+    } else {
+      message('This is not being run in a context with the database. Therefore, we cannot update user data.')
+      user_portfolio$data <-
+        user_portfolio_static
     }
   })
   
   # Clear the portfolio and start from scratch upon restart
   observeEvent(input$filter_restart_button, {
+    new_portfolio$data <- 
+      old_portfolio$data
+  })
+  
+  observeEvent(input$filter_reboot_button, {
     new_portfolio$data <- 
       as_portfolio
   })
@@ -688,7 +718,7 @@ server <- function(input, output) {
     renderText({
       paste0('Your current portfolio has ',
              nrow(old_portfolio$data),
-             ' projects.\n Your new portfolio would have ',
+             ' projects. If saved, your new portfolio would have ',
              nrow(new_portfolio$data),
               ' projects.')
     })
@@ -713,19 +743,6 @@ server <- function(input, output) {
                  c(list(portfolio = x),
                    fc))
     new_portfolio$data <- y
-  })
-  
-  observeEvent(input$filter_save_button, {
-    print('Saving')
-    uu <- user()
-    pids <- new_portfolio$data
-    pids <- pids$project_id
-    if(local){
-      update_db(u = uu,
-                project_ids = pids)
-    } else {
-      warning('No access to a database. Not actually updating.')
-    }
   })
   
   output$new_portfolio_table <-

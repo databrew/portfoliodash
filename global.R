@@ -109,9 +109,9 @@ if (file.exists(dir1)) {
 }
 
 # LOAD DATA
-dir_longevity_data <- "data/longevity_data.csv"
-dir_portfolio_data <- "data/portfolio_funding_data.csv"
-dir_portfolio_volume <- "data/portfolio_volume.csv"
+dir_longevity_data <- "flat_files/longevity_data.csv"
+dir_portfolio_data <- "flat_files/portfolio_funding_data.csv"
+dir_portfolio_volume <- "flat_files/portfolio_volume.csv"
 
 longevity_data <- data.frame(read.csv(dir_longevity_data, blank.lines.skip = TRUE))
 portfolio_data <- data.frame(read.csv(dir_portfolio_data, blank.lines.skip = TRUE))
@@ -133,7 +133,7 @@ portfolio_vol_mat <- portfolio_vol_mat / 1000000 # convert to numbers in mio USD
 #######################################################################################
 
 
-dir_add_details <- "data/fig_ssa_addtional_details.csv"
+dir_add_details <- "flat_files/fig_ssa_addtional_details.csv"
 add_data <- data.frame(read.csv(dir_add_details, blank.lines.skip = TRUE)[c("project_id", "funding_source", "type", "mcf_extended")])
 longevity_data <- merge(longevity_data, add_data, by = "project_id", all.x = TRUE)
 
@@ -161,7 +161,7 @@ longevity_data$mcf_extended <- as.integer(longevity_data$mcf_extended)
 
 
 # Factors
-dir_factors <- "data/factors.csv"
+dir_factors <- "flat_files/factors.csv"
 factors <- read.csv(dir_factors, blank.lines.skip = TRUE)
 funding_src <- factors[factors$factor=="funding_source",2:ncol(factors)]
 funding_src <- funding_src[funding_src != ""]

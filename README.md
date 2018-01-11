@@ -42,9 +42,9 @@ You've now set up the package, but you also need to set up the data on which thi
 ### Flat files
 
 - Much of the underlying data for this application relies on the World Bank's OneDrive. 
-- If you have access to the World Bank's Sharepoint, copy the contents of [this sharepoint url](https://worldbankgroup-my.sharepoint.com/personal/sburi_ifc_org/Documents/FIG%20SSA%20MEL/MEL%20Program%20Operations/Knowledge%20Products/Dashboards%20%26%20Viz/Portfolio%20Dashboard/portfolio_dashboard?csf=1&e=BZReQ1) to `inst/shiny`. Note, this comes with a lot of extra stuff.
-- If you don't have access to the World Bank's Sharepoint, copy the flat files from this [google drive folder](https://drive.google.com/open?id=16dc1BUjjtSTc372U2qLcgMtlG5Hc-ZwS) to `inst/shiny`.
-- Then, move all `.csv` and files to `inst/shiny/data`:
+- If you have access to the World Bank's Sharepoint, copy the contents of [this sharepoint url](https://worldbankgroup-my.sharepoint.com/personal/sburi_ifc_org/Documents/FIG%20SSA%20MEL/MEL%20Program%20Operations/Knowledge%20Products/Dashboards%20%26%20Viz/Portfolio%20Dashboard/portfolio_dashboard?csf=1&e=BZReQ1) to the main directory. Note, this comes with a lot of extra stuff.
+- If you don't have access to the World Bank's Sharepoint, copy the flat files from this [google drive folder](https://drive.google.com/open?id=16dc1BUjjtSTc372U2qLcgMtlG5Hc-ZwS) to the main directory
+- Then, move all `.csv` and files to `flat_files`:
 ```
 ├── factors.csv
 ├── fig_ssa_addtional_details.csv
