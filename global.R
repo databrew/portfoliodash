@@ -10,7 +10,6 @@
 
 # Give more memory to java environment (not required when loading data from local csv)
 #options(java.parameters = "- Xmx2048m")
-library(xlsx)
 library(shiny)
 library(shinydashboard)
 library(timevis)
@@ -24,6 +23,10 @@ library(lubridate)
 library(ggthemes)
 library(RColorBrewer)
 library(RPostgreSQL)
+library(DBI)
+library(DT)
+library(scales)
+library(httr)
 
 local <- grepl('joebrew', getwd())
 # Read in the as portfolio table directly from the database
