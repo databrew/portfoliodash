@@ -1,4 +1,4 @@
-library(shiny); library(tidyr); library(shinydashboard); library(DT); library(lubridate)
+library(shiny); library(tidyr); library(shinydashboard); library(DT); library(lubridate); library(googleVis)
 source('global.R')
 
 header <- dashboardHeader(title="Portfolio Dashboard")
@@ -885,15 +885,55 @@ server <- function(input, output) {
     }
   })
 
-  output$fap_plot <- renderPlot({
-    g2
-  }, height = main_page_plot_height_num)
-  output$apv_plot <- renderPlot({
-    g1
-  }, height = main_page_plot_height_num)
-  output$aps_plot <- renderPlot({
-    g3
-  }, height = main_page_plot_height_num)
+  output$fap_plot <- renderGvis({
+    dat <- as_portfolio %>%
+      group_by(status = region_name) %>%
+      summarise(percent = n())
+    dat$fraction = dat$percent / sum(dat$percent)
+    dat = dat[order(dat$fraction), ]
+    dat$ymax = cumsum(dat$fraction)
+    dat$ymin = c(0, head(dat$ymax, n=-1))
+    
+    # dat$status <- paste0(dat$status, ': ', dat$percent, '%')
+    cols <- colorRampPalette(brewer.pal(n = 9, 'Spectral'))(length(unique(dat$status)))
+    
+    doughnut <- gvisPieChart(dat,
+                          options=list(
+                            # width=500,
+                            height="100%",
+                            legend='none',
+                            colors = paste0('[', paste0("'", cols, "'", collapse = ',' ), ']', collapse = NULL),
+                            pieSliceText='label',
+                            pieHole=0.5),
+                          chartid="doughnut")
+    doughnut
+  })
+  
+  output$apv_plot <- renderGvis({
+    
+    dat <- as_portfolio %>%
+      group_by(status = region_name) %>%
+      summarise(volume = sum(total_project_size, na.rm = TRUE))
+    dat$fraction = dat$volume / sum(dat$volume)
+    dat = dat[order(dat$fraction), ]
+    dat$ymax = cumsum(dat$fraction)
+    dat$ymin = c(0, head(dat$ymax, n=-1))
+    
+    cols <- colorRampPalette(brewer.pal(n = 9, 'Spectral'))(length(unique(dat$status)))
+    
+    d <- gvisPieChart(dat,
+                             options=list(
+                               # width=500,
+                               height="100%",
+                               legend='none',
+                               colors = paste0('[', paste0("'", cols, "'", collapse = ',' ), ']', collapse = NULL),
+                               pieSliceText='label',
+                               pieHole=0.5),
+                             chartid="d")
+    d
+    
+    
+  })
   
   output$main_page <- renderUI({
     okay <- ok()
@@ -901,23 +941,17 @@ server <- function(input, output) {
       fluidPage(
         fluidRow(
           shinydashboard::box(
-            plotOutput('fap_plot'),
+            # plotOutput('fap_plot'),
+            htmlOutput('fap_plot'),
             title = 'Financially active portfolio',
-            width = 4,
+            width = 6,
             solidHeader = TRUE,
             status = "primary",
             height = main_page_plot_height),
           shinydashboard::box(
-            plotOutput('apv_plot'),
+            htmlOutput('apv_plot'),
             title = 'Active portfolio volume',
-            width = 4,
-            solidHeader = TRUE,
-            status = "primary",
-            height = main_page_plot_height),
-          shinydashboard::box(
-            plotOutput('aps_plot'),
-            title = 'Active portfolio sp',
-            width = 4,
+            width = 6,
             solidHeader = TRUE,
             status = "primary",
             height = main_page_plot_height)),

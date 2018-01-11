@@ -232,7 +232,7 @@ projects <- t(data.matrix(portfolio_data[,6]))
 
 
 # Height for main page charts
-main_page_plot_height_num <- 250
+main_page_plot_height_num <- 200
 main_page_plot_height <- paste0(main_page_plot_height_num * 1.4, 'px')
 
 # Make some plots
