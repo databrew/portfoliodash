@@ -64,7 +64,7 @@ My understanding is that the entire app should run off of only these two tables,
 │   ├── factors.csv
 │   ├── fig_ssa_addtional_details.csv
 
-``
+```
 I also understand that `as_portfolio` gives details on each project (ie, one row per project), whereas `as_results` is basically a table of events related to each project (ie, many rows per project).
 
 Is all of the above correct?
