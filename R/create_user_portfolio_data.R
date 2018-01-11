@@ -15,7 +15,7 @@ create_user_portfolio_data <- function(users = NULL,
   
   # If no users, use the one from the package
   if(is.null(users)){
-    users <- portfoliodash::users
+    users <- users
   }
 
   # If not connection object, try to find one

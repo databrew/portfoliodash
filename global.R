@@ -27,11 +27,20 @@ library(DBI)
 library(DT)
 library(scales)
 library(httr)
+library(lubridate)
+
+# load('data/users.rda')
+load('users.rda')
+package_files <- dir('R')
+for(i in 1:length(package_files)){
+  source(paste0('R/', package_files[i]))
+}
+
 
 local <- grepl('joebrew', getwd())
 # Read in the as portfolio table directly from the database
 quick_load <- TRUE
-if('as_portfolio.RData' %in% dir() & quick_load){
+if(('as_portfolio.RData' %in% dir() & quick_load) | !local){
   load('as_portfolio.RData')
 } else {
   co <- src_postgres(dbname = 'portfolio')
@@ -55,7 +64,6 @@ if(!local){
 }
 
 user_portfolio_static <- user_portfolio
-
 
 # Define filter choices
 filter_choices <- c('Is (among)',
@@ -222,15 +230,6 @@ quarters <- format(as.Date(portfolio_data[,1], format="%d/%m/%Y", tz = "GMT"), f
 # Get number of projects for second x-axis
 projects <- t(data.matrix(portfolio_data[,6]))
 
-
-# library(portfoliodash)
-# users <- portfoliodash::users # in packagified form
-# load('data/users.rda')
-load('users.rda')
-package_files <- dir('R')
-for(i in 1:length(package_files)){
-  source(paste0('R/', package_files[i]))
-}
 
 # Height for main page charts
 main_page_plot_height_num <- 250

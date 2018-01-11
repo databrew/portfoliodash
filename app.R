@@ -1,3 +1,4 @@
+library(shiny); library(tidyr); library(shinydashboard); library(DT); library(lubridate)
 source('global.R')
 
 header <- dashboardHeader(title="Portfolio Dashboard")
@@ -611,7 +612,7 @@ server <- function(input, output) {
     Sys.sleep(0.3)
     if(local){
       user_portfolio$data <-
-        portfoliodash::get_data(query = NULL,
+        get_data(query = NULL,
                                 tab = 'user_portfolio',
                                 dbname = 'portfolio',
                                 connection_object = co)
