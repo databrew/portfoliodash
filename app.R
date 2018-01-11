@@ -647,8 +647,6 @@ server <- function(input, output) {
           filter(project_id %in% these_projects)
         new_portfolio$data <- x
         old_portfolio$data <- x
-        print('OBSERVED LOG IN OR TAB CHANGE')
-        print(nrow(old_portfolio$data))
       }
     }
   })
