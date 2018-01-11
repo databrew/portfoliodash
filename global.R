@@ -28,6 +28,7 @@ library(DT)
 library(scales)
 library(httr)
 library(lubridate)
+library(readr)
 
 # load('data/users.rda')
 load('users.rda')

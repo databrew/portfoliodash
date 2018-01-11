@@ -122,6 +122,12 @@ SELECT * FROM portfolio.as_portfolio LIMIT 5;
 (2 rows)
 ```
 
+Then, populate the `as_results` relation with a csv sent by Soren.
+
+```
+> library(portfoliodash)
+> portfoliodash::populate_as_results()
+```
 
 ##### Setting up the user_portfolio table
 
