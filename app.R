@@ -1,10 +1,3 @@
-library(shiny)
-library(shinydashboard)
-library(dplyr)
-library(ggplot2)
-library(lubridate)
-library(ggthemes)
-library(RColorBrewer)
 source('global.R')
 
 header <- dashboardHeader(title="Portfolio Dashboard")
