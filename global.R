@@ -215,3 +215,54 @@ quarters <- format(as.Date(portfolio_data[,1], format="%d/%m/%Y", tz = "GMT"), f
 
 # Get number of projects for second x-axis
 projects <- t(data.matrix(portfolio_data[,6]))
+
+
+# library(portfoliodash)
+# users <- portfoliodash::users # in packagified form
+load('data/users.rda')
+package_files <- dir('R')
+for(i in 1:length(package_files)){
+  source(paste0('R/', package_files[i]))
+}
+
+# Height for main page charts
+main_page_plot_height_num <- 250
+main_page_plot_height <- paste0(main_page_plot_height_num * 1.4, 'px')
+
+# Make some plots
+df <- expand.grid(date = as.Date(paste0('01-', quarters),
+                                 format = '%d-%b-%y'),
+                  key = letters[1:5],
+                  fac = c('Registered users/accounts',
+                          '# of agents',
+                          'Some other metric',
+                          'And another one'))
+df$val <- jitter(as.numeric(df$date) - 15000, factor = 30)
+cols <- colorRampPalette(brewer.pal(n = 9, name = 'Spectral'))(length(unique(df$key)))
+g1 <- ggplot(data = df,
+             aes(x = date,
+                 y = val,
+                 group = key,
+                 color = key)) +
+  geom_line() +
+  facet_wrap(~fac) +
+  ggthemes::theme_fivethirtyeight() +
+  scale_color_manual(name = '',
+                     values = cols)
+g2 <- ggplot(data = df,
+             aes(x = date,
+                 y = val,
+                 group = key,
+                 color = key)) +
+  geom_smooth() +
+  theme_fivethirtyeight() +
+  scale_color_manual(name = '',
+                     values = cols)
+g3 <- ggplot(data = df %>% filter(key == 'a',
+                                  date == '2017-07-01'),
+             aes(x = fac,
+                 y = val)) +
+  geom_bar(stat = 'identity',
+           fill = 'darkorange',
+           alpha = 0.6) +
+  theme_fivethirtyeight()

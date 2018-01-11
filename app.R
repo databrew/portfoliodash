@@ -7,56 +7,6 @@ library(ggthemes)
 library(RColorBrewer)
 source('global.R')
 
-# library(portfoliodash)
-# users <- portfoliodash::users # in packagified form
-load('data/users.rda')
-package_files <- dir('R')
-for(i in 1:length(package_files)){
-  source(paste0('R/', package_files[i]))
-}
-
-# Height for main page charts
-main_page_plot_height_num <- 250
-main_page_plot_height <- paste0(main_page_plot_height_num * 1.4, 'px')
-
-# Make some plots
-df <- expand.grid(date = as.Date(paste0('01-', quarters),
-                                 format = '%d-%b-%y'),
-                  key = letters[1:5],
-                  fac = c('Registered users/accounts',
-                          '# of agents',
-                          'Some other metric',
-                          'And another one'))
-df$val <- jitter(as.numeric(df$date) - 15000, factor = 30)
-cols <- colorRampPalette(brewer.pal(n = 9, name = 'Spectral'))(length(unique(df$key)))
-g1 <- ggplot(data = df,
-       aes(x = date,
-           y = val,
-           group = key,
-           color = key)) +
-  geom_line() +
-  facet_wrap(~fac) +
-  ggthemes::theme_fivethirtyeight() +
-  scale_color_manual(name = '',
-                     values = cols)
-g2 <- ggplot(data = df,
-             aes(x = date,
-                 y = val,
-                 group = key,
-                 color = key)) +
-  geom_smooth() +
-  theme_fivethirtyeight() +
-  scale_color_manual(name = '',
-                     values = cols)
-g3 <- ggplot(data = df %>% filter(key == 'a',
-                                  date == '2017-07-01'),
-             aes(x = fac,
-                 y = val)) +
-  geom_bar(stat = 'identity',
-           fill = 'darkorange',
-           alpha = 0.6) +
-  theme_fivethirtyeight()
-
 header <- dashboardHeader(title="Portfolio Dashboard")
 sidebar <- dashboardSidebar(
   sidebarMenu(
@@ -749,16 +699,14 @@ server <- function(input, output) {
         x <- new_portfolio$data
         prettify(x, download_options = TRUE)
       }
-    },
-    options = list(scrollX = TRUE))
+    })
   output$old_portfolio_table <-
     DT::renderDataTable({
       if(ok()){
         x <- old_portfolio$data
         prettify(x, download_options = TRUE)
       }
-    },
-    options = list(scrollX = TRUE))
+    })
   # Generate inputs for username/password
   output$username_ui <- renderUI({
     if(ok()){
@@ -1049,16 +997,40 @@ server <- function(input, output) {
         collapsed = cl,
         width = 12
       )
-    # if(okay){
+    fluidPage(
       fluidRow(
         column(welcome_width,
                welcome_box),
         column(filter_width,
                uiOutput('industry_filter'))
         
-      )
-    # }
+      ),
+      if(!okay){
+        fluidRow(
+          column(2),
+          shinydashboard::box(
+                   tags$p(style = "font-size: 16px;",
+                          paste0('During the development phase, you can log-in using the credentials below')
+                   ),
+                   DT::dataTableOutput('credentials_table'),
+                   title = 'Credentials',
+                   status = 'warning',
+                   solidHeader = TRUE,
+                   collapsible = TRUE,
+                   collapsed = FALSE,
+                   width = 7
+                 ),
+          column(3))
+      } else {
+        fluidRow()
+      }
+    )
   })
+  output$credentials_table <- DT::renderDataTable({
+    prettify(users)
+  })
+  
+  
   output$industry_filter <- renderUI({
     okay <- ok()
     if(okay){
