@@ -768,7 +768,7 @@ server <- function(input, output) {
         )
       )
     } else if(et == 'Remove'){
-      pr <- portfolios_all$data
+      pr <- portfolios_this_user$data
       choices_labels <- pr$portfolio_name
       choices <- pr$portfolio_id
       names(choices) <- choices_labels
@@ -831,7 +831,7 @@ server <- function(input, output) {
       et <- edit_type()
       if(et == 'Modify'){
         this_portfolio <- input$modify_new
-        this_portfolio_id <- portfolios %>%
+        this_portfolio_id <- portfolios_all$data %>%
           filter(portfolio_name == this_portfolio) %>%
           .$portfolio_id
         these_projects_in <-
