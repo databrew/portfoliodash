@@ -730,7 +730,9 @@ server <- function(input, output) {
         )
       )
     } else if(et == 'Remove'){
-      choices <- sort(pr$portfolio_name)
+      choices_labels <- pr$portfolio_name
+      choices <- pr$portfolio_id
+      names(choices) <- choices_labels
       fluidPage(
         fluidRow(
           selectInput('remove_new',
@@ -778,7 +780,11 @@ server <- function(input, output) {
         filter(user_id == user_id())
       portfolios_reactive$data <- portfolios %>%
         filter(portfolio_id %in% portfolio_users_reactive$data$portfolio_id)
-
+      portfolio_projects_reactive$data <-
+        portfolio_projects %>%
+        filter(portfolio_id %in% portfolios_reactive$data$portfolio_id)
+      as_portfolio_reactive$data <- as_portfolio %>%
+        filter(project_id %in% portfolio_projects_reactive$data$project_id)
     }
   })
   observeEvent(input$create_confirm, {
@@ -786,6 +792,36 @@ server <- function(input, output) {
   })
   observeEvent(input$remove_confirm, {
     message('REMOVAL CONFIRMED, CHANGE EVERYTHING!!!')
+    pu <- portfolio_users
+    ui <- user_id()
+    # Remove from pu those which need to be removed
+    remove_rows <- as.numeric(input$remove_new)
+    remove_rows <-
+      pu$user_id == ui &
+              pu$portfolio_id %in% remove_rows
+    
+    if(length(remove_rows) > 0){
+      pu <- pu[!remove_rows,]
+      portfolio_users <-pu
+
+      # Update the database
+      copy_to(connection_object,
+              portfolio_users,
+              "portfolio_users",
+              temporary = FALSE,
+              overwrite = TRUE)
+
+      # Update the session too
+      portfolio_users_reactive$data <- portfolio_users %>%
+        filter(user_id == user_id())
+      portfolios_reactive$data <- portfolios %>%
+        filter(portfolio_id %in% portfolio_users_reactive$data$portfolio_id)
+      portfolio_projects_reactive$data <-
+        portfolio_projects %>%
+        filter(portfolio_id %in% portfolios_reactive$data$portfolio_id)
+      as_portfolio_reactive$data <- as_portfolio %>%
+        filter(project_id %in% portfolio_projects_reactive$data$project_id)
+    }
   })
   observeEvent(input$modify_confirm, {
     message('MODIFICATION CONFIRMED, CHANGE EVERYTHING!!!')
