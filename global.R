@@ -67,7 +67,7 @@ load_data(local = local,
 #           table = 'portfolio_indicators')
 # Load the portfolio_projects table
 load_data(local = local,
-          quick_load = quick_load,
+          quick_load = FALSE,
           table = 'portfolio_projects')
 # Load the portfolio_users table
 load_data(local = local,
@@ -75,13 +75,12 @@ load_data(local = local,
           table = 'portfolio_users')
 # Load the portfolios table
 load_data(local = local,
-          quick_load = quick_load,
+          quick_load = FALSE,
           table = 'portfolios')
 # Load the users table
 load_data(local = local,
-          quick_load = quick_load,
+          quick_load = FALSE,
           table = 'users')
-portfolio_users_static <- portfolio_users
 
 # Define filter choices
 filter_choices <- c('Is (among)',

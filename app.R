@@ -226,12 +226,19 @@ server <- function(input, output) {
     }
   })
   
-  # Based on user and user_id, create reactive portfolios
-  as_portfolio_reactive <- reactiveValues(data = as_portfolio)
-  portfolio_projects_reactive <- reactiveValues(data = portfolio_projects)
-  portfolio_users_reactive <- reactiveValues(data = portfolio_users)
-  portfolios_reactive <- reactiveValues(data = portfolios)
-  users_reactive <- reactiveValues(data = users)
+  # Based on user and user_id, create reactive datasets
+  as_portfolio_this_user <- reactiveValues(data = as_portfolio)
+  portfolio_projects_this_user <- reactiveValues(data = portfolio_projects)
+  portfolio_users_this_user <- reactiveValues(data = portfolio_users)
+  portfolios_this_user <- reactiveValues(data = portfolios)
+  users_this_user <- reactiveValues(data = users)
+  
+  # Create reactive datasets which are global (not user specific)
+  as_portfolio_all <- reactiveValues(data = as_portfolio)
+  portfolio_projects_all <- reactiveValues(data = portfolio_projects)
+  portfolio_users_all <- reactiveValues(data = portfolio_users)
+  portfolios_all <- reactiveValues(data = portfolios)
+  users_all <- reactiveValues(data = users)
   
   # Update the above reactive objects on submissions
   observeEvent({
@@ -240,32 +247,32 @@ server <- function(input, output) {
   },{
     if(ok()){
       uu <- user_id()
-      ur <- users_reactive$data
+      ur <- users_this_user$data
       
       # Users
-      users_reactive$data <- 
+      users_this_user$data <- 
         ur %>% filter(user_id == uu)
 
       # Portfolio users
-      pp <- portfolio_users_reactive$data
-      portfolio_users_reactive$data <- pp %>%
+      pp <- portfolio_users_this_user$data
+      portfolio_users_this_user$data <- pp %>%
         filter(user_id == uu)
 
       # Portfolios
-      p <- portfolios_reactive$data
-      portfolios_reactive$data <- p %>%
-        filter(portfolio_id %in% portfolio_users_reactive$data$portfolio_id)
+      p <- portfolios_this_user$data
+      portfolios_this_user$data <- p %>%
+        filter(portfolio_id %in% portfolio_users_this_user$data$portfolio_id)
 
       # Portfolio projects
-      pp <- portfolio_projects_reactive$data
-      portfolio_projects_reactive$data <- pp %>%
-        filter(portfolio_id %in% portfolios_reactive$data$portfolio_id)
+      pp <- portfolio_projects_this_user$data
+      portfolio_projects_this_user$data <- pp %>%
+        filter(portfolio_id %in% portfolios_this_user$data$portfolio_id)
 
       # As portfolio
-      ap <- as_portfolio_reactive$data
-      as_portfolio_reactive$data <- 
+      ap <- as_portfolio_this_user$data
+      as_portfolio_this_user$data <- 
         ap %>%
-        filter(project_id %in% portfolio_projects_reactive$data$project_id)
+        filter(project_id %in% portfolio_projects_this_user$data$project_id)
     }
   })
   
@@ -498,7 +505,7 @@ server <- function(input, output) {
   
   output$user_details <- DT::renderDataTable({
     if(ok()){
-      x <- users_reactive$data
+      x <- users_this_user$data
       names(x) <- toupper(names(x))
       names(x) <- gsub('_', ' ', names(x))
       DT::datatable(x,
@@ -584,7 +591,7 @@ server <- function(input, output) {
     okay <- ok()
     if(okay){
       # Get current subscriptions
-      current_subscriptions <- portfolios_reactive$data %>%
+      current_subscriptions <- portfolios_this_user$data %>%
         .$portfolio_name
       current_subscriptions <- paste0(current_subscriptions, collapse = ', ')
       fluidPage(
@@ -617,7 +624,7 @@ server <- function(input, output) {
               fluidRow(
                 column(6,
                        actionButton('action_modify', 
-                                    'Modify your subscriptions',
+                                    'Modify a portfolio',
                                     icon = icon('scissors'))),
                 column(6,
                        fluidRow(actionButton('action_create', 
@@ -635,7 +642,8 @@ server <- function(input, output) {
             width = 9
           )
         ),
-        uiOutput('editing')
+        uiOutput('editing'),
+        uiOutput('edit_content2')
       )
     } else {
       fluidPage()
@@ -662,9 +670,9 @@ server <- function(input, output) {
   })
   output$edit_content <- renderUI({
     et <- edit_type()
-    pr <- portfolios_reactive$data
+    pr <- portfolios_this_user$data
     if(et == 'Subscribe'){
-      choices <- portfolios %>%
+      choices <- portfolios_all$data %>%
         filter(!portfolio_id %in% pr$portfolio_id)
       choices_labels <- paste0(choices$portfolio_name, ' (ID:',
                                        choices$portfolio_id,
@@ -686,7 +694,7 @@ server <- function(input, output) {
         )
       )
     } else if(et == 'Create'){
-      project_choices <- as_portfolio %>%
+      project_choices <- as_portfolio_all$data %>%
         group_by(project_id) %>%
         summarise(project_name = dplyr::first(project_name))
       project_choices_labels <- paste0(project_choices$project_name, ' (ID:',
@@ -697,8 +705,6 @@ server <- function(input, output) {
       project_choices <- sort(project_choices)
       fluidPage(
         fluidRow(
-          fluidRow(h2('This functionality has not yet been implemented')),
-          
           textInput('create_new',
                     'What do you want the name of your new portfolio to be?',
                     value = 'ABC')
@@ -716,18 +722,29 @@ server <- function(input, output) {
         )
       )
     } else if(et == 'Modify'){
-      choices <- portfolios %>%
+      choices <- portfolios_all$data %>%
         filter(!portfolio_id %in% pr$portfolio_id) %>%
         .$portfolio_name
       choices <- sort(choices)
+      # pp <- portfolio_projects %>%
+      #   left_join(as_portfolio %>%
+      #               dplyr::select(project_id,
+      #                             project_name),
+      #             by = 'project_id') %>%
+      #   dplyr::select(project_id, project_name) %>%
+      #   dplyr::filter(!duplicated(project_id))
+      # pp_labels <- pp$project_name
+      # pp <- pp$project_id
+      # names(pp) <- pp_labels
+      
       fluidPage(
-        fluidRow(h2('This functionality has not yet been implemented')),
         fluidRow(
           selectInput('modify_new',
                       'Which portfolio do you want to modify?',
                       choices = choices),
           helpText('You can only modify those portfolios to which you subscribe and are an administrator')
         ),
+        
         fluidRow(
           actionButton('modify_confirm',
                        'Modify',
@@ -758,11 +775,83 @@ server <- function(input, output) {
     }
   })
   
+  # Secondary area for edit content
+  output$edit_content2 <- renderUI({
+    if(ok()){
+      et <- edit_type()
+      pi <- projects_in()
+      po <- projects_out()
+      if(et == 'Modify'){
+        fluidPage(
+          fluidRow(column(6,
+                          selectInput('modify_add',
+                                      'Add projects',
+                                      choices = pi,
+                                      multiple = TRUE,
+                                      selected = NULL)),
+                   column(6,
+                          selectInput('modify_remove',
+                                      'Remove projects',
+                                      choices = po,
+                                      multiple = TRUE,
+                                      selected = NULL)))
+        )
+      }
+    }
+  })
+  
+  
+  # Create reactive lists of projects associated with each portfolio
+  projects_in <- reactiveVal(value = sort(unique(portfolio_projects$project_id)))
+  projects_out <- reactiveVal(value = sort(unique(portfolio_projects$project_id)))
+  observeEvent({
+    input$action_modify;
+    input$modify_new},{
+    if(!is.null(input$modify_new)){
+      et <- edit_type()
+      if(et == 'Modify'){
+        this_portfolio <- input$modify_new
+        this_portfolio_id <- portfolios %>%
+          filter(portfolio_name == this_portfolio) %>%
+          .$portfolio_id
+        these_projects_in <-
+          portfolio_projects_all$data %>%
+          filter(portfolio_id == this_portfolio_id) %>%
+          left_join(as_portfolio %>%
+                      dplyr::select(project_id,
+                                    project_name),
+                    by = 'project_id')
+        these_projects_out <-
+          portfolio_projects_all$data %>%
+          filter(portfolio_id != this_portfolio_id) %>%
+          left_join(as_portfolio %>%
+                      dplyr::select(project_id,
+                                    project_name),
+                    by = 'project_id')
+        these_projects_in_labels <- these_projects_in$project_name
+        these_projects_in <- these_projects_in$project_id
+        names(these_projects_in) <- these_projects_in_labels
+        these_projects_out_labels <- these_projects_out$project_name
+        these_projects_out <- these_projects_out$project_id
+        names(these_projects_out) <- these_projects_out_labels
+        these_projects_in <- these_projects_in[!is.na(these_projects_in)]
+        these_projects_out <- these_projects_out[!is.na(these_projects_out)]
+        if(!is.null(these_projects_in)){
+          projects_in(these_projects_in)
+        }
+        if(!is.null(these_projects_out)){
+          projects_out(these_projects_out)
+        }
+      }
+
+    }
+  })
+  
   # Observe edits to modify the database
   observeEvent(input$subscribe_confirm, {
-    message('SUBSCRIPTION CONFIRMED, CHANGE EVERYTHING!!!')
+    message('SUBSCRIPTION CONFIRMED, MODIFYING DATA')
 
-    pu <- portfolio_users
+    pu <- portfolio_users_all$data
     # Add new rows for the new subscription
     new_rows <- input$subscribe_new
     if(length(new_rows) > 0){
@@ -771,33 +860,76 @@ server <- function(input, output) {
                              is_creator = FALSE,
                              is_admin = FALSE)
       # Add the new rows to the old rows
-      portfolio_users <- bind_rows(pu, new_rows)
+      portfolio_users_all$data <- bind_rows(pu, new_rows)
       
       # Update the database
       copy_to(connection_object, 
-              portfolio_users, 
+              portfolio_users_all$data, 
               "portfolio_users",
               temporary = FALSE,
               overwrite = TRUE)
       
       # Update the session too
-      portfolio_users_reactive$data <- portfolio_users %>%
+      portfolio_users_this_user$data <- portfolio_users_all$data %>%
         filter(user_id == user_id())
-      portfolios_reactive$data <- portfolios %>%
-        filter(portfolio_id %in% portfolio_users_reactive$data$portfolio_id)
-      portfolio_projects_reactive$data <-
-        portfolio_projects %>%
-        filter(portfolio_id %in% portfolios_reactive$data$portfolio_id)
-      as_portfolio_reactive$data <- as_portfolio %>%
-        filter(project_id %in% portfolio_projects_reactive$data$project_id)
+      portfolios_this_user$data <- portfolios_all$data %>%
+        filter(portfolio_id %in% portfolio_users_this_user$data$portfolio_id)
+      portfolio_projects_this_user$data <-
+        portfolio_projects_all$data %>%
+        filter(portfolio_id %in% portfolios_this_user$data$portfolio_id)
+      as_portfolio_this_user$data <- as_portfolio_all$data %>%
+        filter(project_id %in% portfolio_projects_this_user$data$project_id)
     }
   })
   observeEvent(input$create_confirm, {
-    message('CREATION CONFIRMED, CHANGE EVERYTHING!!!')
+    message('CREATION CONFIRMED, MODIFYING DATA')
+    
+    new_portfolio_name <- input$create_new
+    p <- portfolios_all$data
+    new_portfolio_id <- max(p$portfolio_id,
+                            na.rm = TRUE) + 1
+    included_projects <- as.numeric(input$create_vals)
+    
+    # Create the new portfolio
+    new_portfolio <- data_frame(portfolio_id = new_portfolio_id,
+                                portfolio_name = new_portfolio_name)
+    # ... and update the old stuff
+    if(!new_portfolio$portfolio_id %in% p$portfolio_id){
+      message('Creating new portfolios table')
+      # session
+      portfolios_all$data <- bind_rows(p, new_portfolio)
+      p <- portfolios_all$data
+      # db
+      copy_to(connection_object, 
+              portfolios_all$data, 
+              "portfolios",
+              temporary = FALSE,
+              overwrite = TRUE)
+    } else {
+      'The portfolio id already exists, cant go'
+    }
+    
+    # Create the new portfolio projects
+    new_portfolio_projects <- 
+      data_frame(portfolio_id = new_portfolio_id,
+                 project_id = included_projects)
+    # ... and update the old stuff
+    pp <- portfolio_projects_all$data
+    if(!new_portfolio_projects$portfolio_id[1] %in% pp$portfolio_id){
+      message('Creating new portfolio_projects table')
+      portfolio_projects_all$data <-
+        bind_rows(portfolio_projects_all$data,
+                  new_portfolio_projects)
+      copy_to(connection_object, 
+              portfolio_projects_all$data, 
+              "portfolio_projects",
+              temporary = FALSE,
+              overwrite = TRUE)
+    }
   })
   observeEvent(input$remove_confirm, {
-    message('REMOVAL CONFIRMED, CHANGE EVERYTHING!!!')
-    pu <- portfolio_users
+    message('REMOVAL CONFIRMED, MODIFYING DATA')
+    pu <- portfolio_users_all$data
     ui <- user_id()
     # Remove from pu those which need to be removed
     remove_rows <- as.numeric(input$remove_new)
@@ -807,29 +939,79 @@ server <- function(input, output) {
     
     if(length(remove_rows) > 0){
       pu <- pu[!remove_rows,]
-      portfolio_users <-pu
+      portfolio_users_all$data <-pu
 
       # Update the database
       copy_to(connection_object,
-              portfolio_users,
+              portfolio_users_all$data,
               "portfolio_users",
               temporary = FALSE,
               overwrite = TRUE)
 
       # Update the session too
-      portfolio_users_reactive$data <- portfolio_users %>%
+      portfolio_users_this_user$data <- portfolio_users_all$data %>%
         filter(user_id == user_id())
-      portfolios_reactive$data <- portfolios %>%
-        filter(portfolio_id %in% portfolio_users_reactive$data$portfolio_id)
-      portfolio_projects_reactive$data <-
-        portfolio_projects %>%
-        filter(portfolio_id %in% portfolios_reactive$data$portfolio_id)
-      as_portfolio_reactive$data <- as_portfolio %>%
-        filter(project_id %in% portfolio_projects_reactive$data$project_id)
+      portfolios_this_user$data <- portfolios_all$data %>%
+        filter(portfolio_id %in% portfolio_users_this_user$data$portfolio_id)
+      portfolio_projects_this_user$data <-
+        portfolio_projects_all$data %>%
+        filter(portfolio_id %in% portfolios_this_user$data$portfolio_id)
+      as_portfolio_this_user$data <- as_portfolio_all$data %>%
+        filter(project_id %in% portfolio_projects_this_user$data$project_id)
     }
   })
   observeEvent(input$modify_confirm, {
-    message('MODIFICATION CONFIRMED, CHANGE EVERYTHING!!!')
+    message('MODIFICATION CONFIRMED, MODIFYING DATA!!!')
+    
+    #modify_add / modify_remove
+    this_portfolio_id <- 
+      portfolios_all$data %>%
+      filter(portfolio_name == input$modify_new) %>%
+      .$portfolio_id
+    print(this_portfolio_id)
+    # Get the portfolio_projects table for this portfolio id
+    pp <- portfolio_projects_all$data
+    pp <- pp %>% filter(portfolio_id == this_portfolio_id)
+    
+    # Add / remove rows if applicable
+    add_these <- as.numeric(input$modify_add)
+    remove_these <- as.numeric(input$modify_remove)
+    
+    if(!is.null(add_these)){
+      if(length(add_these) > 0){
+        pp <- pp %>%
+          bind_rows(
+            data_frame(portfolio_id = this_portfolio_id,
+                       project_id = add_these)
+          ) %>%
+          dplyr::filter(!duplicated(project_id))
+      }
+    }
+    if(!is.null(remove_these)){
+      if(length(remove_these) > 0){
+        pp <- pp %>%
+          dplyr::filter(!project_id %in% remove_these)
+      }
+    }
+
+    # # Update the database
+    # copy_to(connection_object,
+    #         pp,
+    #         "portfolio_projects",
+    #         temporary = FALSE,
+    #         overwrite = TRUE)
+    # 
+    # # Update the session too
+    # portfolio_projects_all$data <- pp
+    # portfolio_users_this_user$data <- portfolio_users_all$data %>%
+    #   filter(user_id == user_id())
+    # portfolios_this_user$data <- portfolios_all$data %>%
+    #   filter(portfolio_id %in% portfolio_users_this_user$data$portfolio_id)
+    # portfolio_projects_this_user$data <-
+    #   portfolio_projects_all$data %>%
+    #   filter(portfolio_id %in% portfolios_this_user$data$portfolio_id)
+    # as_portfolio_this_user$data <- as_portfolio_all$data %>%
+    #   filter(project_id %in% portfolio_projects_this_user$data$project_id)
   })
   
   output$editing <- renderUI({
@@ -922,7 +1104,7 @@ server <- function(input, output) {
     out <- NULL
     if(okay){
       # Get the portfolios available to the user
-      p <- portfolios_reactive$data
+      p <- portfolios_this_user$data
       p <- p$portfolio_name
       n <- length(p)
       if(length(p) > 0){
