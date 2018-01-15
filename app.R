@@ -597,15 +597,20 @@ server <- function(input, output) {
       fluidPage(
         fluidRow(
           shinydashboard::box(
-            tags$p(style = "font-size: 20px;",
-                   current_subscriptions
+            fluidPage(
+              fluidRow(tags$p(style = "font-size: 20px;",
+                              current_subscriptions
+              )),
+              fluidRow(actionButton('action_remove', 
+                                    'Remove a subscription',
+                                    icon = icon('remove')))
             ),
             title = 'Current portfolio subscriptions',
             status = 'warning',
             solidHeader = TRUE,
             collapsible = TRUE,
             collapsed = FALSE,
-            width = 3
+            width = 4
           ),
           shinydashboard::box(
             fluidPage(
@@ -615,10 +620,9 @@ server <- function(input, output) {
                                     'Subscribe to a portfolio',
                                     icon = icon('copy'))),
                 column(6,
-                       actionButton('action_remove', 
-                                    'Remove a subscription',
+                       actionButton('action_delete', 
+                                    'Delete a portfolio',
                                     icon = icon('eraser')))
-                
               ),
               br(),
               fluidRow(
@@ -639,7 +643,7 @@ server <- function(input, output) {
             solidHeader = TRUE,
             collapsible = TRUE,
             collapsed = FALSE,
-            width = 9
+            width = 8
           )
         ),
         uiOutput('editing'),
@@ -668,10 +672,30 @@ server <- function(input, output) {
     edit_request(TRUE)
     edit_type('Remove')
   })
+  observeEvent(input$action_delete, {
+    edit_request(TRUE)
+    edit_type('Delete')
+  })
   output$edit_content <- renderUI({
     et <- edit_type()
-    pr <- portfolios_this_user$data
-    if(et == 'Subscribe'){
+    if(et == 'Delete'){
+      pr <- portfolios_all$data
+      choices <- pr$portfolio_id
+      names(choices) <- pr$portfolio_name
+      fluidPage(
+        fluidRow(
+          selectInput('delete_new',
+                      'Which portfolio do you want to delete?',
+                      choices = choices)
+        ),
+        fluidRow(
+          actionButton('delete_confirm',
+                       'Delete',
+                       icon = icon('trash'))
+        )
+      )
+    } else if(et == 'Subscribe'){
+      pr <- portfolios_this_user$data
       choices <- portfolios_all$data %>%
         filter(!portfolio_id %in% pr$portfolio_id)
       choices_labels <- paste0(choices$portfolio_name, ' (ID:',
@@ -694,6 +718,7 @@ server <- function(input, output) {
         )
       )
     } else if(et == 'Create'){
+      pr <- portfolios_all$data
       project_choices <- as_portfolio_all$data %>%
         group_by(project_id) %>%
         summarise(project_name = dplyr::first(project_name))
@@ -722,21 +747,11 @@ server <- function(input, output) {
         )
       )
     } else if(et == 'Modify'){
+      pr <- portfolios_all$data
       choices <- portfolios_all$data %>%
-        filter(!portfolio_id %in% pr$portfolio_id) %>%
+        # filter(!portfolio_id %in% pr$portfolio_id) %>%
         .$portfolio_name
       choices <- sort(choices)
-      # pp <- portfolio_projects %>%
-      #   left_join(as_portfolio %>%
-      #               dplyr::select(project_id,
-      #                             project_name),
-      #             by = 'project_id') %>%
-      #   dplyr::select(project_id, project_name) %>%
-      #   dplyr::filter(!duplicated(project_id))
-      # pp_labels <- pp$project_name
-      # pp <- pp$project_id
-      # names(pp) <- pp_labels
-      
       fluidPage(
         fluidRow(
           selectInput('modify_new',
@@ -752,6 +767,7 @@ server <- function(input, output) {
         )
       )
     } else if(et == 'Remove'){
+      pr <- portfolios_all$data
       choices_labels <- pr$portfolio_name
       choices <- pr$portfolio_id
       names(choices) <- choices_labels
@@ -776,6 +792,9 @@ server <- function(input, output) {
   })
   
   # Secondary area for edit content
+  # only applicable to the "modification" option
+  # because the add/remove rows menus need to be in a 
+  # different fluidpage than the reactive element on which they're based
   output$edit_content2 <- renderUI({
     if(ok()){
       et <- edit_type()
@@ -786,13 +805,13 @@ server <- function(input, output) {
           fluidRow(column(6,
                           selectInput('modify_add',
                                       'Add projects',
-                                      choices = pi,
+                                      choices = po,
                                       multiple = TRUE,
                                       selected = NULL)),
                    column(6,
                           selectInput('modify_remove',
                                       'Remove projects',
-                                      choices = po,
+                                      choices = pi,
                                       multiple = TRUE,
                                       selected = NULL)))
         )
@@ -1021,6 +1040,48 @@ server <- function(input, output) {
       filter(portfolio_id %in% portfolios_this_user$data$portfolio_id)
     as_portfolio_this_user$data <- as_portfolio_all$data %>%
       filter(project_id %in% portfolio_projects_this_user$data$project_id)
+  })
+  
+  observeEvent(input$delete_confirm, {
+    p <- portfolios_all$data
+    message('DELETION CONFIRMED, MODIFYING DATA!!!')
+    portfolio_to_delete <- as.integer(input$delete_new)
+    if(length(portfolio_to_delete == 1)){
+      p <- p %>%
+        filter(portfolio_id != portfolio_to_delete)
+    }
+    # Update session # for all
+    portfolio_projects_all$data <- portfolio_projects_all$data %>%
+      filter(portfolio_id != portfolio_to_delete)
+    portfolio_users_all$data <- portfolio_users_all$data %>%
+      filter(portfolio_id != portfolio_to_delete)
+    portfolios_all$data <- portfolios_all$data %>%
+      filter(portfolio_id != portfolio_to_delete)
+    # Update session # for user
+    portfolio_projects_this_user$data <- portfolio_projects_this_user$data %>%
+      filter(portfolio_id != portfolio_to_delete)
+    portfolio_users_this_user$data <- portfolio_users_this_user$data %>%
+      filter(portfolio_id != portfolio_to_delete) 
+    portfolios_this_user$data <- portfolios_this_user$data %>%
+      filter(portfolio_id != portfolio_to_delete)
+    as_portfolio_this_user$data <- as_portfolio_this_user$data %>%
+      filter(project_id %in% portfolio_projects_this_user$data$project_id)
+    # Update database
+    copy_to(connection_object,
+            portfolio_projects_all$data,
+            "portfolio_projects",
+            temporary = FALSE,
+            overwrite = TRUE)
+    copy_to(connection_object,
+            portfolio_users_all$data ,
+            "portfolio_users",
+            temporary = FALSE,
+            overwrite = TRUE)
+    copy_to(connection_object,
+            portfolios_all$data ,
+            "portfolios",
+            temporary = FALSE,
+            overwrite = TRUE)
   })
   
   output$editing <- renderUI({
