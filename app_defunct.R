@@ -12,22 +12,22 @@ sidebar <- dashboardSidebar(
     uiOutput('password_ui'),
     h6(textOutput('incorrect_password_text')),
     uiOutput('submit_ui'),
-    # menuItemOutput('configure_menu'),
+    menuItemOutput('configure_menu'),
     menuItemOutput('longevity_menu'),
     menuItemOutput('budget_menu'),
     menuItemOutput('flag_view_menu'),
     menuItemOutput('project_view_menu'),
     menuItemOutput('about_menu'),
     uiOutput('log_out_ui'),
-    div(style="position: absolute; bottom: 0px; background-color: white; width: 100%;",
-
+    div(style="position: absolute; bottom: 0px; background-color: white; width: 100%;", 
+        
         div(style="width: 203px; margin:0 auto; padding: 0;",
-
+            
             tags$a(href='http://www.mastercardfdn.org/',
                    tags$img(src='mcf_logo.png', style="width: 100px; display: inline;")),
-
+            
             tags$a(href='http://www.ifc.org/',
-                   tags$img(src='ifc_logo.jpeg', style="width: 100px; display: inline;"))
+                   tags$img(src='ifc_logo.jpeg', style="width: 100px; display: inline;"))   
         ))
   )
 )
@@ -45,6 +45,90 @@ body <- dashboardBody(
       uiOutput('welcome_page'),
       uiOutput('main_page')
         )
+    ),
+    tabItem(
+      tabName = 'configure',
+      fluidPage(
+        fluidRow(
+          shinydashboard::box(
+            tags$p(style = "font-size: 28px",
+                   'Pick up to 4 fields for filtering your portfolio'
+            ),
+            fluidRow(column(12, helpText(textOutput('portfolio_size_text')))),
+            fluidRow(column(3,
+                   selectInput('filter_1',
+                               'Filter 1',
+                               choices = c('', var_choices),
+                               selected = '')),
+            column(3,
+                   selectInput('filter_2',
+                               'Filter 2',
+                               choices = c('', var_choices),
+                               selected = '')),
+            column(3,
+                   selectInput('filter_3',
+                               'Filter 3',
+                               choices = c('', var_choices),
+                               selected = '')),
+            column(3,
+                   selectInput('filter_4',
+                               'Filter 4',
+                               choices = c('', var_choices),
+                               selected = ''))),
+            fluidRow(
+              column(3, uiOutput('filter_1_b')),
+              column(3, uiOutput('filter_2_b')),
+              column(3, uiOutput('filter_3_b')),
+              column(3, uiOutput('filter_4_b'))
+            ),
+            fluidRow(
+              column(3, uiOutput('filter_1_c')),
+              column(3, uiOutput('filter_2_c')),
+              column(3, uiOutput('filter_3_c')),
+              column(3, uiOutput('filter_4_c'))
+            ),
+            fluidRow(
+              column(5),
+              column(2, uiOutput('filter_action')),
+              column(5)
+            ),
+            fluidRow(
+              column(1),
+              column(10,
+                     p('Note: filters are treated as "OR" statements (ie, projects are kept if they satisfy any of the above filter conditions). Filters are applied to your already previously filtered data. If you want to start from scratch (with all projects, click below.')),
+              column(1)
+            ),
+            fluidRow(
+              column(4, uiOutput('filter_restart')),
+              column(4, uiOutput('filter_reboot')),
+              column(4, uiOutput('filter_save'))),
+            title = 'Controls',
+            status = 'warning',
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            collapsed = FALSE,
+            width = 12)
+        ),
+        fluidRow(
+          shinydashboard::box(
+            DT::dataTableOutput('old_portfolio_table'),
+            title = 'Your old portfolio',
+            status = 'warning',
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            collapsed = TRUE,
+            width = 12)),
+        fluidRow(
+          shinydashboard::box(
+            DT::dataTableOutput('new_portfolio_table'),
+            title = 'Your new portfolio',
+            status = 'warning',
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            collapsed = TRUE,
+            width = 12))
+      )
+    
     ),
     tabItem(
       tabName = 'longevity',
@@ -66,11 +150,11 @@ body <- dashboardBody(
           solidHeader = TRUE,
           status = "primary",
           width = NULL,
-
-
+          
+          
           timevisOutput("longevity_plot")
         )
-
+        
       )
     ),
     tabItem(
@@ -98,7 +182,7 @@ body <- dashboardBody(
             plotOutput('spending_rates_plot')
           )
         )
-
+        
       )
     ),
     tabItem(
@@ -206,61 +290,417 @@ ui <- dashboardPage(header, sidebar, body, skin="blue")
 # Server
 server <- function(input, output) {
   
-  # Create reactive user and user_id values
-  user <- reactiveVal(value = NULL)
-  user_id <- reactiveVal(value = NULL)
-  observeEvent({
-    input$username
-    input$submit
-  },{
-    if(ok()){
-      u <- input$username
-      user(u)
-      uid <- users %>% filter(name == u) %>% .$user_id
-      user_id(uid)
-      message('Logged in as username: ', u, ' which is user_id: ', uid)
+  # Create reactive variables which are selected for filtering
+  filter_var_1 <- reactive({
+    out <- NULL
+      if(ok() & !is.null(input$filter_1)){
+        out <- unlist(as_portfolio[,input$filter_1])
+      }
+    })
+  filter_var_2 <- reactive({
+    out <- NULL
+    if(ok() & !is.null(input$filter_2)){
+      out <- unlist(as_portfolio[,input$filter_2])
+    }
+  })
+  filter_var_3 <- reactive({
+    out <- NULL
+    if(ok() & !is.null(input$filter_3)){
+      out <- unlist(as_portfolio[,input$filter_3])
+    }
+  })
+  filter_var_4 <- reactive({
+    out <- NULL
+    if(ok() & !is.null(input$filter_4)){
+      out <- unlist(as_portfolio[,input$filter_4])
     }
   })
   
-  # Based on user and user_id, create reactive portfolios
-  as_portfolio_reactive <- reactiveValues(data = as_portfolio)
-  portfolio_projects_reactive <- reactiveValues(data = portfolio_projects)
-  portfolio_users_reactive <- reactiveValues(data = portfolio_users)
-  portfolios_reactive <- reactiveValues(data = portfolios)
-  users_reactive <- reactiveValues(data = users)
+  # Restart the filter selection upon a re-start
+  # filter_selection <- reactiveVal(value = '')
+  # observeEvent(input$filter_restart_button, {
+  #   filter_selection('')
+  # })
+  # 
+  # Generate filters b, if filters a are selected
+  output$filter_1_b <- renderUI({
+    if(!ok()){
+      NULL
+    } else {
+      # See if filter a is something other than ''
+      if(!is.null(input$filter_1)){
+        if(input$filter_1 != ''){
+          if(classify(filter_var_1()) == 'character'){
+            choices <- filter_choices_character} else { choices <- filter_choices
+            }
+          selectInput('filter_1_b_in',
+                      'Operation',
+                      choices = choices)
+        }
+      }
+    }
+  })
+  output$filter_2_b <- renderUI({
+    if(!ok()){
+      NULL
+    } else {
+      # See if filter a is something other than ''
+      if(!is.null(input$filter_2)){
+        if(input$filter_2 != ''){
+          if(classify(filter_var_2()) == 'character'){
+            choices <- filter_choices_character} else { choices <- filter_choices
+            }
+          selectInput('filter_2_b_in',
+                      'Operation',
+                      choices = choices)
+        }
+      }
+    }
+  })
+  output$filter_3_b <- renderUI({
+    if(!ok()){
+      NULL
+    } else {
+      # See if filter a is something other than ''
+      if(!is.null(input$filter_3)){
+        if(input$filter_3 != ''){
+          if(classify(filter_var_3()) == 'character'){
+            choices <- filter_choices_character} else { choices <- filter_choices
+            }
+          selectInput('filter_3_b_in',
+                      'Operation',
+                      choices = choices)
+        }
+      }
+    }
+  })
+  output$filter_4_b <- renderUI({
+    if(!ok()){
+      NULL
+    } else {
+      # See if filter a is something other than ''
+      if(!is.null(input$filter_4)){
+        if(input$filter_4 != ''){
+          if(classify(filter_var_4()) == 'character'){
+            choices <- filter_choices_character} else { choices <- filter_choices
+            }
+          selectInput('filter_4_b_in',
+                      'Operation',
+                      choices = choices)
+        }
+      }
+    }
+  })
+  output$filter_1_c <- renderUI({
+    if(!ok()){
+      NULL
+    } else {
+      if(!is.null(input$filter_1_b_in)){
+         # Get the variable and class
+        var <- filter_var_1()
+        the_class <- classify(var)
+        # If numeric, render a slider for adding a number
+        if(the_class == 'numeric'){
+          step <-  max(var, na.rm = TRUE) / 100
+          step <- ifelse(step > 1, round(step), round(step, digits = 3))
+          sliderInput('filter_1_c_in',
+                      label = '',
+                      min = min(var, na.rm = TRUE),
+                      max = max(var, na.rm = TRUE),
+                      value = mean(var, na.rm = TRUE),
+                      step = step)
+        } else if(the_class == 'Date'){
+          dateInput('filter_1_c_in',
+                    label = '',
+                    value = Sys.Date())
+        } else if(the_class == 'character'){
+          selectInput('filter_1_c_in',
+                    label = '',
+                    choices = sort(unique(var)),
+                    multiple = TRUE)
+        }
+      }
+    }
+  })
+  output$filter_2_c <- renderUI({
+    if(!ok()){
+      NULL
+    } else {
+      if(!is.null(input$filter_2_b_in)){
+        # Get the variable and class
+        var <- filter_var_2()
+        the_class <- classify(var)
+        # If numeric, render a slider for adding a number
+        if(the_class == 'numeric'){
+          step <-  max(var, na.rm = TRUE) / 100
+          step <- ifelse(step > 1, round(step), round(step, digits = 3))
+          sliderInput('filter_2_c_in',
+                      label = '',
+                      min = min(var, na.rm = TRUE),
+                      max = max(var, na.rm = TRUE),
+                      value = mean(var, na.rm = TRUE),
+                      step = step)
+        } else if(the_class == 'Date'){
+          dateInput('filter_2_c_in',
+                    label = '',
+                    value = Sys.Date())
+        } else if(the_class == 'character'){
+          selectInput('filter_2_c_in',
+                      label = '',
+                      choices = sort(unique(var)),
+                      multiple = TRUE)
+        }
+      }
+    }
+  })
+  output$filter_3_c <- renderUI({
+    if(!ok()){
+      NULL
+    } else {
+      if(!is.null(input$filter_3_b_in)){
+        # Get the variable and class
+        var <- filter_var_3()
+        the_class <- classify(var)
+        # If numeric, render a slider for adding a number
+        if(the_class == 'numeric'){
+          step <-  max(var, na.rm = TRUE) / 100
+          step <- ifelse(step > 1, round(step), round(step, digits = 3))
+          sliderInput('filter_3_c_in',
+                      label = '',
+                      min = min(var, na.rm = TRUE),
+                      max = max(var, na.rm = TRUE),
+                      value = mean(var, na.rm = TRUE),
+                      step = step)
+        } else if(the_class == 'Date'){
+          dateInput('filter_3_c_in',
+                    label = '',
+                    value = Sys.Date())
+        } else if(the_class == 'character'){
+          selectInput('filter_3_c_in',
+                      label = '',
+                      choices = sort(unique(var)),
+                      multiple = TRUE)
+        }
+      }
+    }
+  })
+  output$filter_4_c <- renderUI({
+    if(!ok()){
+      NULL
+    } else {
+      if(!is.null(input$filter_4_b_in)){
+        # Get the variable and class
+        var <- filter_var_4()
+        the_class <- classify(var)
+        # If numeric, render a slider for adding a number
+        if(the_class == 'numeric'){
+          step <-  max(var, na.rm = TRUE) / 100
+          step <- ifelse(step > 1, round(step), round(step, digits = 3))
+          sliderInput('filter_4_c_in',
+                      label = '',
+                      min = min(var, na.rm = TRUE),
+                      max = max(var, na.rm = TRUE),
+                      value = mean(var, na.rm = TRUE),
+                      step = step)
+        } else if(the_class == 'Date'){
+          dateInput('filter_4_c_in',
+                    label = '',
+                    value = Sys.Date())
+        } else if(the_class == 'character'){
+          selectInput('filter_4_c_in',
+                      label = '',
+                      choices = sort(unique(var)),
+                      multiple = TRUE)
+        }
+      }
+    }
+  })
+  # Action buttons for applying filters
+  output$filter_action <- renderUI({
+    if(!ok()){
+      NULL
+    } else {
+      # See if any filter is something other than ''
+      if(input$filter_1 != '' |
+         input$filter_2 != '' |
+         input$filter_3 != '' |
+         input$filter_4 != ''){
+        actionButton('filter_action_button',
+                     'Apply filters',
+                     icon = icon('binoculars'))
+      
+      }
+    }
+  })
   
-  # Update the above reactive objects on submissions
-  observeEvent({
-    input$username
-    input$submit
-  },{
-    if(ok()){
-      uu <- user_id()
-      ur <- users_reactive$data
-      users_reactive$data <- 
-        ur %>% filter(user_id == uu)
+  output$filter_restart <- renderUI({
+    if(!ok()){
+      NULL
+    } else {
+        actionButton('filter_restart_button',
+                     'Undo changes since last save',
+                     icon = icon('cubes'))
+        
+    }
+  })
+  
+  output$filter_reboot <- renderUI({
+    if(!ok()){
+      NULL
+    } else {
+      actionButton('filter_reboot_button',
+                   'Start new portfolio from scratch',
+                   icon = icon('cubes'))
       
-      pp <- portfolio_users_reactive$data
-      portfolio_users_reactive$data <- pp %>%
-        filter(user_id == uu)
+    }
+  })
+  
+  output$filter_save <- renderUI({
+    if(!ok()){
+      NULL
+    } else {
+      actionButton('filter_save_button',
+                   'Save your new portfolio',
+                   icon = icon('binoculars'))
       
-      p <- portfolios_reactive$data
-      portfolios_reactive$data <- p %>%
-        filter(portfolio_id %in% portfolio_users_reactive$data$portfolio_id)
     }
   })
   
     
-  # Message about tabs
+  # Reactive users portfolio, based on filters
+  new_portfolio <- reactiveValues(data = as_portfolio)
+  old_portfolio <- reactiveValues(data = as_portfolio)
+  user_portfolio <- reactiveValues(data = portfolio_users_static)
+  
+  # Update the old_portfolio at log-in, log-out and tab change
   observeEvent({
     input$log_out
     input$submit; 
     input$tabs
   }, {
     message(paste0('Selected tab is: ', input$tabs))
-      })
+    if(ok()){
+      uu <- user()
+      if(!is.null(uu)){
+        these_projects  <-
+          user_portfolio$data %>%
+          filter(username == uu) %>%
+          .$project_id
+        x <- 
+          as_portfolio %>%
+          filter(project_id %in% these_projects)
+        new_portfolio$data <- x
+        old_portfolio$data <- x
+      }
+    }
+  })
   
- 
+  observeEvent(input$filter_save_button,{
+    # Write to the database
+    uu <- user()
+    message('Saving new portfolio for ', uu)
+    pids <- new_portfolio$data
+    old_portfolio$data <- new_portfolio$data
+    pids <- pids$project_id
+    if(local){
+      update_db(u = uu,
+                project_ids = pids)
+    } else {
+      warning('No access to a database. Not actually updating.')
+    }
+    # Update the user_portfolio table
+    Sys.sleep(0.3)
+    if(local){
+      user_portfolio$data <-
+        get_data(query = NULL,
+                                tab = 'user_portfolio',
+                                dbname = 'portfolio',
+                                connection_object = co)
+    } else {
+      message('This is not being run in a context with the database. Therefore, we cannot update user data.')
+      user_portfolio$data <-
+        user_portfolio_static
+    }
+  })
+  
+  # Clear the portfolio and start from scratch upon restart
+  observeEvent(input$filter_restart_button, {
+    new_portfolio$data <- 
+      old_portfolio$data
+  })
+  
+  observeEvent(input$filter_reboot_button, {
+    new_portfolio$data <- 
+      as_portfolio
+  })
+
+  # Create reactive filters
+  filter_a <- reactive({
+    make_filter(variable = input$filter_1,
+                operator = input$filter_1_b_in,
+                selection = input$filter_1_c_in)
+  })
+  filter_b <- reactive({
+    make_filter(variable = input$filter_2,
+                operator = input$filter_2_b_in,
+                selection = input$filter_2_c_in)
+  })
+  filter_c <- reactive({
+    make_filter(variable = input$filter_3,
+                operator = input$filter_3_b_in,
+                selection = input$filter_3_c_in)
+  })
+  filter_d <- reactive({
+    make_filter(variable = input$filter_4,
+                operator = input$filter_4_b_in,
+                selection = input$filter_4_c_in)
+  })
+  
+  output$portfolio_size_text <-
+    renderText({
+      paste0('Your current portfolio has ',
+             nrow(old_portfolio$data),
+             ' projects. If saved, your new portfolio would have ',
+             nrow(new_portfolio$data),
+              ' projects.')
+    })
+  
+  # Create a vector of filter conditions
+  filter_conditions <- reactive({
+    f1 <- filter_a()
+    f2 <- filter_b()
+    f3 <- filter_c()
+    f4 <- filter_d()
+    fs <- c(f1, f2, f3, f4)
+    fs <- fs[!fs %in% c('', "c('')")]
+    return(fs)
+  })
+  
+  # Apply filters when the apply filter button is clicked
+  observeEvent(input$filter_action_button, {
+    x <- new_portfolio$data
+    # Get filter conditions
+    fc <- filter_conditions()
+    y <- do.call(filter_portfolio,
+                 c(list(portfolio = x),
+                   fc))
+    new_portfolio$data <- y
+  })
+  
+  output$new_portfolio_table <-
+    DT::renderDataTable({
+      if(ok()){
+        x <- new_portfolio$data
+        prettify(x, download_options = TRUE)
+      }
+    })
+  output$old_portfolio_table <-
+    DT::renderDataTable({
+      if(ok()){
+        x <- old_portfolio$data
+        prettify(x, download_options = TRUE)
+      }
+    })
   # Generate inputs for username/password
   output$username_ui <- renderUI({
     if(ok()){
@@ -394,7 +834,7 @@ server <- function(input, output) {
     if(okay){
       NULL
     } else if(wps){
-      'Wrong username/password combination'
+      'Wrong password'
     } else {
       NULL
     }
@@ -407,7 +847,7 @@ server <- function(input, output) {
     un <- input$username
     pw <- input$password
     if(!is.null(un) & !is.null(pw)){
-      if(un %in% users$name){ # We'll eventually add password conditions here
+      if(pw == 'password'){
         out <- TRUE
       }
     }
@@ -417,6 +857,19 @@ server <- function(input, output) {
   observeEvent(input$log_out,{
     ok(FALSE)
     user(NULL)
+  })
+  
+  # Create an observing user
+  user <- reactiveVal(value = NULL)
+  observeEvent({
+    input$username
+    input$submit
+  },{
+    if(ok()){
+      u <- input$username
+      user(u)
+      message('Logged in as username: ', u)
+    }
   })
   
   output$text1 <- renderText({
@@ -477,41 +930,10 @@ server <- function(input, output) {
     
   })
   
-  output$user_details <- DT::renderDataTable({
-    if(ok()){
-      x <- users_reactive$data
-      names(x) <- toupper(names(x))
-      DT::datatable(x,
-                    options = list(dom = 't'))
-    }
-  })
-  
-  output$your_portfolios <- DT::renderDataTable({
-    if(ok()){
-      x <- portfolio_users_reactive$data 
-      y <- portfolios_reactive$data
-      DT::datatable(y,
-                    options = list(dom = 't'))
-    }
-  })
-  
   output$main_page <- renderUI({
     okay <- ok()
     if(okay){
-      uu <- user()
       fluidPage(
-        fluidRow(
-          shinydashboard::box(
-            h3('User details'),
-            DT::dataTableOutput('user_details'),
-            h3('User portfolio(s)'),
-            DT::dataTableOutput('your_portfolios'),
-            title = paste0(uu, "'s portfolio"),
-            width = 12,
-            solidHeader = TRUE,
-            status = "primary")
-          
-        ),
         fluidRow(
           shinydashboard::box(
             # plotOutput('fap_plot'),
