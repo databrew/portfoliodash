@@ -12,7 +12,7 @@ sidebar <- dashboardSidebar(
     uiOutput('password_ui'),
     h6(textOutput('incorrect_password_text')),
     uiOutput('submit_ui'),
-    # menuItemOutput('configure_menu'),
+    menuItemOutput('configure_menu'),
     menuItemOutput('longevity_menu'),
     menuItemOutput('budget_menu'),
     menuItemOutput('flag_view_menu'),
@@ -45,6 +45,10 @@ body <- dashboardBody(
       uiOutput('welcome_page'),
       uiOutput('main_page')
         )
+    ),
+    tabItem(
+      tabName = 'configure',
+      uiOutput('configure_page')
     ),
     tabItem(
       tabName = 'longevity',
@@ -337,7 +341,7 @@ server <- function(input, output) {
         menuItem(
           text="Configure portfolio",
           tabName="configure",
-          icon=icon("envelope-open"))
+          icon=icon("wrench"))
       }
     })
   
@@ -496,16 +500,8 @@ server <- function(input, output) {
     if(ok()){
       x <- users_reactive$data
       names(x) <- toupper(names(x))
+      names(x) <- gsub('_', ' ', names(x))
       DT::datatable(x,
-                    options = list(dom = 't'),
-                    rownames = FALSE)
-    }
-  })
-  
-  output$your_portfolios <- DT::renderDataTable({
-    if(ok()){
-      y <- portfolios_reactive$data
-      DT::datatable(y,
                     options = list(dom = 't'),
                     rownames = FALSE)
     }
@@ -514,15 +510,11 @@ server <- function(input, output) {
   output$main_page <- renderUI({
     okay <- ok()
     if(okay){
-      uu <- user()
       fluidPage(
         fluidRow(
           shinydashboard::box(
-            h3('User details'),
             DT::dataTableOutput('user_details'),
-            h3('User portfolio(s)'),
-            DT::dataTableOutput('your_portfolios'),
-            title = paste0(uu, "'s portfolio"),
+            title = 'User details',
             width = 12,
             solidHeader = TRUE,
             status = "primary")
@@ -587,6 +579,104 @@ server <- function(input, output) {
       )
     }
   })
+  
+  output$configure_page <- renderUI({
+    okay <- ok()
+    if(okay){
+      # Get current subscriptions
+      current_subscriptions <- portfolios_reactive$data %>%
+        .$portfolio_name
+      current_subscriptions <- paste0(current_subscriptions, collapse = ', ')
+      fluidPage(
+        fluidRow(
+          shinydashboard::box(
+            tags$p(style = "font-size: 20px;",
+                   current_subscriptions
+            ),
+            title = 'Current portfolio subscriptions',
+            status = 'warning',
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            collapsed = FALSE,
+            width = 4
+          ),
+          shinydashboard::box(
+            fluidPage(
+              fluidRow(
+                actionButton('action_subscribe', 
+                             'Subscribe to another portfolio',
+                             icon = icon('copy'))
+              ),
+              fluidRow(
+                actionButton('action_remove', 
+                             'Remove a subscription',
+                             icon = icon('eraser'))
+              ),
+              fluidRow(
+                actionButton('action_modify', 
+                             'Modify which portfolios you subscribe to',
+                             icon = icon('scissors'))
+              ),
+              fluidRow(actionButton('action_create', 
+                                    'Create a new portfolio',
+                                    icon = icon('plus-square')))
+            ),
+            title = 'Actions',
+            status = 'warning',
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            collapsed = FALSE,
+            width = 8
+          )
+        ),
+        uiOutput('editing')
+      )
+    } else {
+      fluidPage()
+    }
+  })
+  
+  edit_request <- reactiveVal(value = FALSE)
+  edit_type <- reactiveVal(value = '')
+  observeEvent(input$action_subscribe, {
+    edit_request(TRUE)
+    edit_type('Subscribe')
+  })
+  observeEvent(input$action_create, {
+    edit_request(TRUE)
+    edit_type('Create')
+  })
+  observeEvent(input$action_modify, {
+    edit_request(TRUE)
+    edit_type('Modify')
+  })
+  observeEvent(input$action_remove, {
+    edit_request(TRUE)
+    edit_type('Remove')
+  })
+  output$edit_content <- renderUI({
+    'Some text goes here'
+  })
+  output$editing <- renderUI({
+    okay <- ok()
+    editing <- edit_request()
+    if(okay & editing){
+      fluidRow(
+        shinydashboard::box(
+          uiOutput('edit_content'),
+          title = edit_type(),
+          status = 'primary',
+          solidHeader = TRUE,
+          collapsible = TRUE,
+          collapsed = FALSE,
+          width = 12
+        )
+      )
+    } else {
+      NULL
+    }
+  })
+  
   output$welcome_page <- renderUI({
     okay <- ok()
     welcome_width <- ifelse(okay, 8, 11)
@@ -619,7 +709,7 @@ server <- function(input, output) {
         column(welcome_width,
                welcome_box),
         column(filter_width,
-               uiOutput('industry_filter'))
+               uiOutput('portfolios_text'))
         
       ),
       if(!okay){
@@ -627,7 +717,7 @@ server <- function(input, output) {
           column(2),
           shinydashboard::box(
                    tags$p(style = "font-size: 16px;",
-                          paste0('During the development phase, you can log-in using the credentials below')
+                          paste0('During the development phase, you can log-in using any of the names below as the username (the password can be anything).')
                    ),
                    DT::dataTableOutput('credentials_table'),
                    title = 'Credentials',
@@ -644,17 +734,33 @@ server <- function(input, output) {
     )
   })
   output$credentials_table <- DT::renderDataTable({
-    prettify(users)
+    x <- users %>% dplyr::select(name)
+    DT::datatable(x,
+                  options = list(dom = 't'),
+                  rownames = FALSE,
+                  colnames = '')
   })
   
   
-  output$industry_filter <- renderUI({
+  output$portfolios_text <- renderUI({
     okay <- ok()
+    out <- NULL
     if(okay){
-      selectInput('industry',
-                  'Industry',
-                  choices = letters)
-    }
+      # Get the portfolios available to the user
+      p <- portfolios_reactive$data
+      p <- p$portfolio_name
+      n <- length(p)
+      if(length(p) > 0){
+        p <- paste0(p, collapse = ', ')
+        out <- 
+          valueBox(value = n,
+                 subtitle = 'Subscribed portfolios',
+                 icon = icon('tasks'),
+                 color = 'blue',
+                 width = 12)
+      } 
+    } 
+    return(out)
   })
   
   output$funding_plot <- renderChart({
