@@ -781,8 +781,6 @@ server <- function(input, output) {
       et <- edit_type()
       pi <- projects_in()
       po <- projects_out()
-      print(paste0('Length of pi is ', length(pi)))
-      print(paste0('Length of po is ', length(po)))
       if(et == 'Modify'){
         fluidPage(
           fluidRow(column(6,
