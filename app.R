@@ -781,6 +781,8 @@ server <- function(input, output) {
       et <- edit_type()
       pi <- projects_in()
       po <- projects_out()
+      print(paste0('Length of pi is ', length(pi)))
+      print(paste0('Length of po is ', length(po)))
       if(et == 'Modify'){
         fluidPage(
           fluidRow(column(6,
@@ -820,22 +822,26 @@ server <- function(input, output) {
           left_join(as_portfolio %>%
                       dplyr::select(project_id,
                                     project_name),
-                    by = 'project_id')
+                    by = 'project_id') %>%
+          filter(!duplicated(project_id))
         these_projects_out <-
           portfolio_projects_all$data %>%
           filter(portfolio_id != this_portfolio_id) %>%
           left_join(as_portfolio %>%
                       dplyr::select(project_id,
                                     project_name),
-                    by = 'project_id')
+                    by = 'project_id') %>%
+          filter(!duplicated(project_id))
         these_projects_in_labels <- these_projects_in$project_name
         these_projects_in <- these_projects_in$project_id
         names(these_projects_in) <- these_projects_in_labels
         these_projects_out_labels <- these_projects_out$project_name
         these_projects_out <- these_projects_out$project_id
         names(these_projects_out) <- these_projects_out_labels
-        these_projects_in <- these_projects_in[!is.na(these_projects_in)]
-        these_projects_out <- these_projects_out[!is.na(these_projects_out)]
+        these_projects_in <- these_projects_in[!is.na(these_projects_in) &
+                                                 !is.na(these_projects_in_labels)]
+        these_projects_out <- these_projects_out[!is.na(these_projects_out) &
+                                                   !is.na(these_projects_out_labels)]
         if(!is.null(these_projects_in)){
           projects_in(these_projects_in)
         }
@@ -968,7 +974,6 @@ server <- function(input, output) {
       portfolios_all$data %>%
       filter(portfolio_name == input$modify_new) %>%
       .$portfolio_id
-    print(this_portfolio_id)
     # Get the portfolio_projects table for this portfolio id
     pp <- portfolio_projects_all$data
     pp <- pp %>% filter(portfolio_id == this_portfolio_id)
@@ -993,25 +998,31 @@ server <- function(input, output) {
           dplyr::filter(!project_id %in% remove_these)
       }
     }
+    
+    # pp is just for this portfolio_id
+    # Update the entire portfolio_projects table
+    new_pp <- portfolio_projects_all$data
+    new_pp <- new_pp %>%
+      filter(portfolio_id != this_portfolio_id) %>% 
+      bind_rows(pp)
+    # Update the database
+    copy_to(connection_object,
+            new_pp,
+            "portfolio_projects",
+            temporary = FALSE,
+            overwrite = TRUE)
 
-    # # Update the database
-    # copy_to(connection_object,
-    #         pp,
-    #         "portfolio_projects",
-    #         temporary = FALSE,
-    #         overwrite = TRUE)
-    # 
-    # # Update the session too
-    # portfolio_projects_all$data <- pp
-    # portfolio_users_this_user$data <- portfolio_users_all$data %>%
-    #   filter(user_id == user_id())
-    # portfolios_this_user$data <- portfolios_all$data %>%
-    #   filter(portfolio_id %in% portfolio_users_this_user$data$portfolio_id)
-    # portfolio_projects_this_user$data <-
-    #   portfolio_projects_all$data %>%
-    #   filter(portfolio_id %in% portfolios_this_user$data$portfolio_id)
-    # as_portfolio_this_user$data <- as_portfolio_all$data %>%
-    #   filter(project_id %in% portfolio_projects_this_user$data$project_id)
+    # Update the session too
+    portfolio_projects_all$data <- new_pp
+    portfolio_users_this_user$data <- portfolio_users_all$data %>%
+      filter(user_id == user_id())
+    portfolios_this_user$data <- portfolios_all$data %>%
+      filter(portfolio_id %in% portfolio_users_this_user$data$portfolio_id)
+    portfolio_projects_this_user$data <-
+      portfolio_projects_all$data %>%
+      filter(portfolio_id %in% portfolios_this_user$data$portfolio_id)
+    as_portfolio_this_user$data <- as_portfolio_all$data %>%
+      filter(project_id %in% portfolio_projects_this_user$data$project_id)
   })
   
   output$editing <- renderUI({
