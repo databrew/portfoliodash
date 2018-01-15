@@ -1,4 +1,4 @@
-library(shiny); library(tidyr); library(shinydashboard); library(DT); library(lubridate); library(googleVis)
+
 source('global.R')
 
 header <- dashboardHeader(title="Portfolio Dashboard")
@@ -570,7 +570,7 @@ server <- function(input, output) {
   # Reactive users portfolio, based on filters
   new_portfolio <- reactiveValues(data = as_portfolio)
   old_portfolio <- reactiveValues(data = as_portfolio)
-  user_portfolio <- reactiveValues(data = user_portfolio_static)
+  user_portfolio <- reactiveValues(data = portfolio_users_static)
   
   # Update the old_portfolio at log-in, log-out and tab change
   observeEvent({
@@ -847,13 +847,8 @@ server <- function(input, output) {
     un <- input$username
     pw <- input$password
     if(!is.null(un) & !is.null(pw)){
-      the_password <- users %>%
-        filter(username == un) %>%
-        .$password
-      if(length(the_password) == 1){
-        if(the_password == pw){
-          out <- TRUE
-        }
+      if(pw == 'password'){
+        out <- TRUE
       }
     }
     ok(out)

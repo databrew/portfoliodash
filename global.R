@@ -1,17 +1,9 @@
-#############################################
-#                                           #
-#   KM Portfolio Dashboard                  #
-#   Version 0.4.1 (Alpha)                   #
-#   27/09/2017                              #
-#   Christian Ruckteschler                  #
-#                                           #
-#############################################
-
-
-# Give more memory to java environment (not required when loading data from local csv)
-#options(java.parameters = "- Xmx2048m")
 library(shiny)
+library(tidyr)
 library(shinydashboard)
+library(DT)
+library(lubridate)
+library(googleVis)
 library(timevis)
 library(rCharts)
 library(dplyr)
@@ -19,52 +11,77 @@ library(tidyr)
 library(Hmisc)
 library(yaml)
 library(ggplot2)
-library(lubridate)
 library(ggthemes)
 library(RColorBrewer)
 library(RPostgreSQL)
 library(DBI)
-library(DT)
 library(scales)
 library(httr)
-library(lubridate)
 library(readr)
+library(babynames)
 
-# load('data/users.rda')
-load('users.rda')
+# Source package files (if not having installed "portfoliodash")
 package_files <- dir('R')
 for(i in 1:length(package_files)){
   source(paste0('R/', package_files[i]))
 }
 
-
+# Define whether being run in a development env (ie, "local" on Joe's computer)
+# or on production
+# We only do this so as to use cached data (rather than database) when testing locally
 local <- grepl('joebrew', getwd())
-# Read in the as portfolio table directly from the database
 quick_load <- TRUE
-if(('as_portfolio.RData' %in% dir() & quick_load) | !local){
-  load('as_portfolio.RData')
-} else {
-  co <- src_postgres(dbname = 'portfolio')
-  as_portfolio <- get_data(query = NULL,
-                                          tab = 'as_portfolio',
-                                          dbname = 'portfolio',
-                                          connection_object = co)
-  # Keep only a few for now
-  as_portfolio <- sample_n(as_portfolio, 200)
-  save(as_portfolio, file = 'as_portfolio.RData')
+
+# Define function for loading in data
+load_data <- function(local = FALSE,
+                      quick_load = FALSE,
+                      table = 'as_portfolio'){
+  file_name <- paste0(table, '.RData')
+  # Read in the as portfolio table directly from the database
+  if((file_name %in% dir() & quick_load) | !local){
+    load(file_name)
+  } else {
+    co <- src_postgres(dbname = 'portfolio')
+    x <- get_data(query = NULL,
+                             tab = table,
+                             dbname = 'portfolio',
+                             connection_object = co)
+    save(x, file = file_name)
+  }
+  assign(table,
+         x,
+         envir = .GlobalEnv)
 }
 
-if(!local){
-  load('user_portfolio.RData')
-} else {
-  co <- src_postgres(dbname = 'portfolio')
-  user_portfolio <- get_data(query = NULL,
-                                            tab = 'user_portfolio',
-                                            dbname = 'portfolio',
-                                            connection_object = co)
-}
-
-user_portfolio_static <- user_portfolio
+# Load the as_portfolio table
+load_data(local = local,
+          quick_load = quick_load,
+          table = 'as_portfolio')
+# Load the as_results table (Not doing yet, because not using yet)
+# load_data(local = local,
+#           quick_load = quick_load,
+#           table = 'as_results')
+# Load the portfolio_indicators table (Not doing yet, because not using yet)
+# load_data(local = local,
+#           quick_load = quick_load,
+#           table = 'portfolio_indicators')
+# Load the portfolio_projects table
+load_data(local = local,
+          quick_load = quick_load,
+          table = 'portfolio_projects')
+# Load the portfolio_users table
+load_data(local = local,
+          quick_load = quick_load,
+          table = 'portfolio_users')
+# Load the portfolios table
+load_data(local = local,
+          quick_load = quick_load,
+          table = 'portfolios')
+# Load the users table
+load_data(local = local,
+          quick_load = quick_load,
+          table = 'users')
+portfolio_users_static <- portfolio_users
 
 # Define filter choices
 filter_choices <- c('Is (among)',
