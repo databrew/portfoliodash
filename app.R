@@ -647,7 +647,8 @@ server <- function(input, output) {
           )
         ),
         uiOutput('editing'),
-        uiOutput('edit_content2')
+        uiOutput('edit_content2'),
+        uiOutput('edit_content3')
       )
     } else {
       fluidPage()
@@ -1104,7 +1105,49 @@ server <- function(input, output) {
     }
   })
   
-  output$welcome_page <- renderUI({
+  output$available_portfolios <- 
+    renderDataTable({
+      x <- portfolio_projects_all$data
+      x <- x %>% 
+        group_by(portfolio_id) %>%
+        summarise(`Number of projects` = length(unique(project_id)))
+      x <- x %>% left_join(portfolios_all$data,
+                           by = 'portfolio_id') %>%
+        dplyr::select(portfolio_name, portfolio_id, `Number of projects`) %>%
+        dplyr::rename(Name = portfolio_name,
+                      ID = portfolio_id)
+      DT::datatable(x,
+                    rownames = FALSE,
+                    options = list(pageLength = 5))
+    })
+  
+  output$your_package <- 
+    renderDataTable({
+      x <- portfolio_projects_this_user$data
+      x <- x %>%
+        summarise(Portfolios = length(unique(portfolio_id)),
+                  Projects = length(unique(project_id)))
+      DT::datatable(x,
+                    rownames = FALSE,
+                    options = list(dom = 't'))
+    })
+  
+  output$edit_content3 <- renderUI({ 
+    if(ok()){
+      fluidPage(
+        fluidRow(
+          column(6,
+                 h3('Available portfolios'),
+                 DT::dataTableOutput('available_portfolios')),
+          column(6,
+                 h3('Your subscription details'),
+                 DT::dataTableOutput('your_package'))
+        )
+      )
+    }
+    })
+  
+    output$welcome_page <- renderUI({
     okay <- ok()
     welcome_width <- ifelse(okay, 8, 11)
     cl <- ifelse(okay, TRUE, FALSE)
