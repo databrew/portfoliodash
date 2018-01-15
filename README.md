@@ -59,15 +59,20 @@ In production the database will be maintained by the World Bank. For development
 
 #### Production
 
-The production database is expected to be named "portfolio", and to have the following 3 relations:
+The production database is expected to be named "portfolio", and to have the following 7 relations:
 
 ```
-              List of relations
-  Schema   |      Name      | Type  
------------+----------------+-------
- portfolio | as_portfolio   | table 
- portfolio | as_results     | table 
- portfolio | user_portfolio | table 
+                 List of relations
+  Schema   |         Name         | Type  |  Owner  
+-----------+----------------------+-------+---------
+ portfolio | as_portfolio         | table | joebrew
+ portfolio | as_results           | table | joebrew
+ portfolio | portfolio_indicators | table | joebrew
+ portfolio | portfolio_projects   | table | joebrew
+ portfolio | portfolio_users      | table | joebrew
+ portfolio | portfolios           | table | joebrew
+ portfolio | users                | table | joebrew
+
 ```
 
 If you don't have a "portfolio" database set up, or if you do but need to create one of the above relations, continue reading.
@@ -114,12 +119,11 @@ SELECT * FROM portfolio.as_portfolio LIMIT 5;
 - Load the as_results table into the database: `psql -d portfolio -f run_insert.sql`
 - Open an interactive psql session (`psql portfolio`) and confirm the presence of the `as_results` relation: `\dt` should return
 ```
-             List of relations
-  Schema   |     Name     | Type  |  Owner  
------------+--------------+-------+---------
- portfolio | as_portfolio | table | joebrew
- portfolio | as_results   | table | joebrew
-(2 rows)
+                 List of relations
+  Schema   |         Name         | Type  |  Owner  
+-----------+----------------------+-------+---------
+ portfolio | as_portfolio         | table | joebrew
+ portfolio | as_results           | table | joebrew
 ```
 
 Then, populate the `as_results` relation with a csv sent by Soren.
@@ -129,15 +133,51 @@ Then, populate the `as_results` relation with a csv sent by Soren.
 > portfoliodash::populate_as_results()
 ```
 
-##### Setting up the user_portfolio table
+##### Setting up the users table
 
-The `user_portfolio` table is meant to store which rows from the `as_portfolio` table are associated with each user. The app will not only read from this table, but also directly modify it when users add to and remove from their portfolio.
-
-Upon creation of a `user_portfolio` table, we assume that all users start with "full" portfolios, ie, every observation in the `as_portfolio` table is part of each user's portfolio. To create a table in such a state, we run the following from with R:
+The users table contains information on application users: id, email address, upi, etc. To create an initial users table, run the following in R:
 
 ```
-> library(portfoliodash)
-> portfoliodash::create_user_portfolio_data()
+> portfoliodash::create_users_db()
+```
+
+##### Setting up the portfolio_projects table
+
+The `portfolio_projects` table is meant to store portfolios are associated with which projects. Each portfolio is associated with > 0 projects. To set up an initial table in R, run: 
+
+```
+> portfoliodash::create_portfolio_projects_db()
+```
+
+##### Setting up the portfolio_users table
+
+The `portfolio_users` table is meant to store which portfolios are associated with each user (a user having between 0 and inf portfolios). To create an initial table, run the following in R:
+
+```
+> portfoliodash::create_portfolio_users_db()
+```
+##### Setting up the portfolios table
+
+The `portfolios` table is meant to store which projects are associated with which portfolios. To set it up initially, run the following in R:
+
+```
+> portfoliodash::create_portfolios_db()
+```
+
+##### Setting up the portfolio_indicators table
+
+The `portfolio_indicators` table needs to be set up as well. 
+
+```
+> portfoliodash::create_portfolio_indicators_db()
+```
+
+##### Inspecting the database
+
+The database is now set up and ready for use. To inspect the entire schema run the following from the psql console:
+
+```
+select table_schema, table_name, column_name, data_type from information_schema.columns where table_schema = 'portfolio';
 ```
 
 ## Other utilities
