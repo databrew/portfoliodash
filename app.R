@@ -873,7 +873,7 @@ server <- function(input, output) {
   
   # Observe edits to modify the database
   observeEvent(input$subscribe_confirm, {
-    message('SUBSCRIPTION CONFIRMED, MODIFYING DATA')
+    message('SUBSCRIPTION CONFIRMED')
 
     pu <- portfolio_users_all$data
     # Add new rows for the new subscription
@@ -906,7 +906,7 @@ server <- function(input, output) {
     }
   })
   observeEvent(input$create_confirm, {
-    message('CREATION CONFIRMED, MODIFYING DATA')
+    message('CREATION CONFIRMED')
     
     new_portfolio_name <- input$create_new
     p <- portfolios_all$data
@@ -952,7 +952,7 @@ server <- function(input, output) {
     }
   })
   observeEvent(input$remove_confirm, {
-    message('REMOVAL CONFIRMED, MODIFYING DATA')
+    message('REMOVAL CONFIRMED')
     pu <- portfolio_users_all$data
     ui <- user_id()
     # Remove from pu those which need to be removed
@@ -985,7 +985,7 @@ server <- function(input, output) {
     }
   })
   observeEvent(input$modify_confirm, {
-    message('MODIFICATION CONFIRMED, MODIFYING DATA!!!')
+    message('MODIFICATION CONFIRMED!!!')
     
     #modify_add / modify_remove
     this_portfolio_id <- 
@@ -1045,7 +1045,7 @@ server <- function(input, output) {
   
   observeEvent(input$delete_confirm, {
     p <- portfolios_all$data
-    message('DELETION CONFIRMED, MODIFYING DATA!!!')
+    message('DELETION CONFIRMED!!!')
     portfolio_to_delete <- as.integer(input$delete_new)
     if(length(portfolio_to_delete == 1)){
       p <- p %>%
