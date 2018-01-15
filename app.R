@@ -598,35 +598,41 @@ server <- function(input, output) {
             solidHeader = TRUE,
             collapsible = TRUE,
             collapsed = FALSE,
-            width = 4
+            width = 3
           ),
           shinydashboard::box(
             fluidPage(
               fluidRow(
-                actionButton('action_subscribe', 
-                             'Subscribe to another portfolio',
-                             icon = icon('copy'))
+                column(6,
+                       actionButton('action_subscribe', 
+                                    'Subscribe to a portfolio',
+                                    icon = icon('copy'))),
+                column(6,
+                       actionButton('action_remove', 
+                                    'Remove a subscription',
+                                    icon = icon('eraser')))
+                
               ),
+              br(),
               fluidRow(
-                actionButton('action_remove', 
-                             'Remove a subscription',
-                             icon = icon('eraser'))
-              ),
-              fluidRow(
-                actionButton('action_modify', 
-                             'Modify which portfolios you subscribe to',
-                             icon = icon('scissors'))
-              ),
-              fluidRow(actionButton('action_create', 
-                                    'Create a new portfolio',
-                                    icon = icon('plus-square')))
+                column(6,
+                       actionButton('action_modify', 
+                                    'Modify your subscriptions',
+                                    icon = icon('scissors'))),
+                column(6,
+                       fluidRow(actionButton('action_create', 
+                                             'Create a new portfolio',
+                                             icon = icon('plus-square')))
+                       
+                )
+              )
             ),
             title = 'Actions',
             status = 'warning',
             solidHeader = TRUE,
             collapsible = TRUE,
             collapsed = FALSE,
-            width = 8
+            width = 9
           )
         ),
         uiOutput('editing')
@@ -659,23 +665,50 @@ server <- function(input, output) {
     pr <- portfolios_reactive$data
     if(et == 'Subscribe'){
       choices <- portfolios %>%
-        filter(!portfolio_id %in% pr$portfolio_id) %>%
-        .$portfolio_name
-      choices <- sort(choices)
+        filter(!portfolio_id %in% pr$portfolio_id)
+      choices_labels <- paste0(choices$portfolio_name, ' (ID:',
+                                       choices$portfolio_id,
+                                       ')')
+      choices <- choices$portfolio_id
+      names(choices) <- choices_labels
       fluidPage(
         fluidRow(
           selectInput('subscribe_new',
                       'Which portfolio(s) do you want to subscribe to?',
                       choices = choices,
                       multiple = TRUE)
+        ),
+        fluidRow(
+          actionButton('subscribe_confirm',
+                       'Subscribe',
+                       icon = icon('check-square'))
         )
       )
     } else if(et == 'Create'){
+      project_choices <- as_portfolio %>%
+        group_by(project_id) %>%
+        summarise(project_name = dplyr::first(project_name))
+      project_choices_labels <- paste0(project_choices$project_name, ' (ID:',
+                                       project_choices$project_id,
+                                       ')')
+      project_choices <- project_choices$project_id
+      names(project_choices) <- project_choices_labels
       fluidPage(
         fluidRow(
           textInput('create_new',
                     'What do you want the name of your new portfolio to be?',
                     value = 'ABC')
+        ),
+        fluidRow(
+          selectInput('create_vals',
+                    'Which projects do you want to include in this portfolio?',
+                    choices = project_choices,
+                    multiple = TRUE)
+        ),
+        fluidRow(
+          actionButton('create_confirm',
+                       'Create',
+                       icon = icon('check-square'))
         )
       )
     } else if(et == 'Modify'){
@@ -686,10 +719,14 @@ server <- function(input, output) {
       fluidPage(
         fluidRow(
           selectInput('modify_new',
-                      'Which portfolio(s) do you want to modify?',
-                      choices = choices,
-                      multiple = TRUE),
+                      'Which portfolio do you want to modify?',
+                      choices = choices),
           helpText('You can only modify those portfolios to which you subscribe and are an administrator')
+        ),
+        fluidRow(
+          actionButton('modify_confirm',
+                       'Modify',
+                       icon = icon('check-square'))
         )
       )
     } else if(et == 'Remove'){
@@ -700,6 +737,11 @@ server <- function(input, output) {
                       'Which portfolio(s) do you want to remove?',
                       choices = choices,
                       multiple = TRUE)
+        ),
+        fluidRow(
+          actionButton('remove_confirm',
+                       'Remove',
+                       icon = icon('check-square'))
         )
       )
       
@@ -708,6 +750,47 @@ server <- function(input, output) {
       NULL
     }
   })
+  
+  # Observe edits to modify the database
+  observeEvent(input$subscribe_confirm, {
+    message('SUBSCRIPTION CONFIRMED, CHANGE EVERYTHING!!!')
+
+    pu <- portfolio_users
+    # Add new rows for the new subscription
+    new_rows <- input$subscribe_new
+    if(length(new_rows) > 0){
+      new_rows <- data_frame(portfolio_id = as.numeric(new_rows),
+                             user_id = user_id(),
+                             is_creator = FALSE,
+                             is_admin = FALSE)
+      # Add the new rows to the old rows
+      portfolio_users <- bind_rows(pu, new_rows)
+      
+      # Update the database
+      copy_to(connection_object, 
+              portfolio_users, 
+              "portfolio_users",
+              temporary = FALSE,
+              overwrite = TRUE)
+      
+      # Update the session too
+      portfolio_users_reactive$data <- portfolio_users %>%
+        filter(user_id == user_id())
+      portfolios_reactive$data <- portfolios %>%
+        filter(portfolio_id %in% portfolio_users_reactive$data$portfolio_id)
+
+    }
+  })
+  observeEvent(input$create_confirm, {
+    message('CREATION CONFIRMED, CHANGE EVERYTHING!!!')
+  })
+  observeEvent(input$remove_confirm, {
+    message('REMOVAL CONFIRMED, CHANGE EVERYTHING!!!')
+  })
+  observeEvent(input$modify_confirm, {
+    message('MODIFICATION CONFIRMED, CHANGE EVERYTHING!!!')
+  })
+  
   output$editing <- renderUI({
     okay <- ok()
     editing <- edit_request()

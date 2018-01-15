@@ -71,7 +71,7 @@ load_data(local = local,
           table = 'portfolio_projects')
 # Load the portfolio_users table
 load_data(local = local,
-          quick_load = quick_load,
+          quick_load = FALSE,
           table = 'portfolio_users')
 # Load the portfolios table
 load_data(local = local,
@@ -290,3 +290,6 @@ g3 <- ggplot(data = df %>% filter(key == 'a',
            fill = 'darkorange',
            alpha = 0.6) +
   theme_fivethirtyeight()
+
+# Establish a connection to use during app session
+connection_object <- credentials_connect(credentials_extract())
