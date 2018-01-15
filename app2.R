@@ -46,90 +46,6 @@ body <- dashboardBody(
       uiOutput('main_page')
         )
     ),
-    # tabItem(
-    #   tabName = 'configure',
-    #   fluidPage(
-    #     fluidRow(
-    #       shinydashboard::box(
-    #         tags$p(style = "font-size: 28px",
-    #                'Pick up to 4 fields for filtering your portfolio'
-    #         ),
-    #         fluidRow(column(12, helpText(textOutput('portfolio_size_text')))),
-    #         fluidRow(column(3,
-    #                selectInput('filter_1',
-    #                            'Filter 1',
-    #                            choices = c('', var_choices),
-    #                            selected = '')),
-    #         column(3,
-    #                selectInput('filter_2',
-    #                            'Filter 2',
-    #                            choices = c('', var_choices),
-    #                            selected = '')),
-    #         column(3,
-    #                selectInput('filter_3',
-    #                            'Filter 3',
-    #                            choices = c('', var_choices),
-    #                            selected = '')),
-    #         column(3,
-    #                selectInput('filter_4',
-    #                            'Filter 4',
-    #                            choices = c('', var_choices),
-    #                            selected = ''))),
-    #         fluidRow(
-    #           column(3, uiOutput('filter_1_b')),
-    #           column(3, uiOutput('filter_2_b')),
-    #           column(3, uiOutput('filter_3_b')),
-    #           column(3, uiOutput('filter_4_b'))
-    #         ),
-    #         fluidRow(
-    #           column(3, uiOutput('filter_1_c')),
-    #           column(3, uiOutput('filter_2_c')),
-    #           column(3, uiOutput('filter_3_c')),
-    #           column(3, uiOutput('filter_4_c'))
-    #         ),
-    #         fluidRow(
-    #           column(5),
-    #           column(2, uiOutput('filter_action')),
-    #           column(5)
-    #         ),
-    #         fluidRow(
-    #           column(1),
-    #           column(10,
-    #                  p('Note: filters are treated as "OR" statements (ie, projects are kept if they satisfy any of the above filter conditions). Filters are applied to your already previously filtered data. If you want to start from scratch (with all projects, click below.')),
-    #           column(1)
-    #         ),
-    #         fluidRow(
-    #           column(4, uiOutput('filter_restart')),
-    #           column(4, uiOutput('filter_reboot')),
-    #           column(4, uiOutput('filter_save'))),
-    #         title = 'Controls',
-    #         status = 'warning',
-    #         solidHeader = TRUE,
-    #         collapsible = TRUE,
-    #         collapsed = FALSE,
-    #         width = 12)
-    #     ),
-    #     fluidRow(
-    #       shinydashboard::box(
-    #         DT::dataTableOutput('old_portfolio_table'),
-    #         title = 'Your old portfolio',
-    #         status = 'warning',
-    #         solidHeader = TRUE,
-    #         collapsible = TRUE,
-    #         collapsed = TRUE,
-    #         width = 12)),
-    #     fluidRow(
-    #       shinydashboard::box(
-    #         DT::dataTableOutput('new_portfolio_table'),
-    #         title = 'Your new portfolio',
-    #         status = 'warning',
-    #         solidHeader = TRUE,
-    #         collapsible = TRUE,
-    #         collapsed = TRUE,
-    #         width = 12))
-    #   )
-    # 
-    # ),
     tabItem(
       tabName = 'longevity',
       fluidPage(
@@ -312,8 +228,30 @@ server <- function(input, output) {
   portfolio_users_reactive <- reactiveValues(data = portfolio_users)
   portfolios_reactive <- reactiveValues(data = portfolios)
   users_reactive <- reactiveValues(data = users)
+  
+  # Update the above reactive objects on submissions
+  observeEvent({
+    input$username
+    input$submit
+  },{
+    if(ok()){
+      uu <- user_id()
+      ur <- users_reactive$data
+      users_reactive$data <- 
+        ur %>% filter(user_id == uu)
+      
+      pp <- portfolio_users_reactive$data
+      portfolio_users_reactive$data <- pp %>%
+        filter(user_id == uu)
+      
+      p <- portfolios_reactive$data
+      portfolios_reactive$data <- p %>%
+        filter(portfolio_id %in% portfolio_users_reactive$data$portfolio_id)
+    }
+  })
+  
     
-  # Update the old_portfolio at log-in, log-out and tab change
+  # Message about tabs
   observeEvent({
     input$log_out
     input$submit; 
@@ -539,10 +477,41 @@ server <- function(input, output) {
     
   })
   
+  output$user_details <- DT::renderDataTable({
+    if(ok()){
+      x <- users_reactive$data
+      names(x) <- toupper(names(x))
+      DT::datatable(x,
+                    options = list(dom = 't'))
+    }
+  })
+  
+  output$your_portfolios <- DT::renderDataTable({
+    if(ok()){
+      x <- portfolio_users_reactive$data 
+      y <- portfolios_reactive$data
+      DT::datatable(y,
+                    options = list(dom = 't'))
+    }
+  })
+  
   output$main_page <- renderUI({
     okay <- ok()
     if(okay){
+      uu <- user()
       fluidPage(
+        fluidRow(
+          shinydashboard::box(
+            h3('User details'),
+            DT::dataTableOutput('user_details'),
+            h3('User portfolio(s)'),
+            DT::dataTableOutput('your_portfolios'),
+            title = paste0(uu, "'s portfolio"),
+            width = 12,
+            solidHeader = TRUE,
+            status = "primary")
+          
+        ),
         fluidRow(
           shinydashboard::box(
             # plotOutput('fap_plot'),
