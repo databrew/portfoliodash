@@ -671,6 +671,7 @@ server <- function(input, output) {
                                        ')')
       choices <- choices$portfolio_id
       names(choices) <- choices_labels
+      choices <- sort(choices)
       fluidPage(
         fluidRow(
           selectInput('subscribe_new',
@@ -693,8 +694,11 @@ server <- function(input, output) {
                                        ')')
       project_choices <- project_choices$project_id
       names(project_choices) <- project_choices_labels
+      project_choices <- sort(project_choices)
       fluidPage(
         fluidRow(
+          fluidRow(h2('This functionality has not yet been implemented')),
+          
           textInput('create_new',
                     'What do you want the name of your new portfolio to be?',
                     value = 'ABC')
@@ -717,6 +721,7 @@ server <- function(input, output) {
         .$portfolio_name
       choices <- sort(choices)
       fluidPage(
+        fluidRow(h2('This functionality has not yet been implemented')),
         fluidRow(
           selectInput('modify_new',
                       'Which portfolio do you want to modify?',
