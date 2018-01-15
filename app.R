@@ -655,7 +655,58 @@ server <- function(input, output) {
     edit_type('Remove')
   })
   output$edit_content <- renderUI({
-    'Some text goes here'
+    et <- edit_type()
+    pr <- portfolios_reactive$data
+    if(et == 'Subscribe'){
+      choices <- portfolios %>%
+        filter(!portfolio_id %in% pr$portfolio_id) %>%
+        .$portfolio_name
+      choices <- sort(choices)
+      fluidPage(
+        fluidRow(
+          selectInput('subscribe_new',
+                      'Which portfolio(s) do you want to subscribe to?',
+                      choices = choices,
+                      multiple = TRUE)
+        )
+      )
+    } else if(et == 'Create'){
+      fluidPage(
+        fluidRow(
+          textInput('create_new',
+                    'What do you want the name of your new portfolio to be?',
+                    value = 'ABC')
+        )
+      )
+    } else if(et == 'Modify'){
+      choices <- portfolios %>%
+        filter(!portfolio_id %in% pr$portfolio_id) %>%
+        .$portfolio_name
+      choices <- sort(choices)
+      fluidPage(
+        fluidRow(
+          selectInput('modify_new',
+                      'Which portfolio(s) do you want to modify?',
+                      choices = choices,
+                      multiple = TRUE),
+          helpText('You can only modify those portfolios to which you subscribe and are an administrator')
+        )
+      )
+    } else if(et == 'Remove'){
+      choices <- sort(pr$portfolio_name)
+      fluidPage(
+        fluidRow(
+          selectInput('remove_new',
+                      'Which portfolio(s) do you want to remove?',
+                      choices = choices,
+                      multiple = TRUE)
+        )
+      )
+      
+      
+    } else {
+      NULL
+    }
   })
   output$editing <- renderUI({
     okay <- ok()
