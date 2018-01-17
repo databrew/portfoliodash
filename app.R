@@ -649,6 +649,7 @@ server <- function(input, output) {
         ),
         uiOutput('editing'),
         uiOutput('edit_content2'),
+        uiOutput('control_filters'),
         uiOutput('edit_content3')
       )
     } else {
@@ -1147,6 +1148,43 @@ server <- function(input, output) {
       )
     }
     })
+  
+  output$control_filters <- renderUI({
+    fluidPage(
+      fluidRow(
+        box(
+          title = "Controls",
+          status = "warning",
+          solidHeader = TRUE,
+          width = NULL,
+          
+          div(style="display: inline-block;vertical-align:top; width: 175px; margin-right:10px;",
+              selectInput("selectRegion", "Region: ", c("Sub-Saharan Africa" = "SSA"), selected = "SSA")
+          ),
+          div(style="display: inline-block;vertical-align:top; width: 175px; margin-right:10px;",
+              selectInput("selectBline", "Business Line: ", c("FIG" = "FIG"), selected = "FIG")
+          ),
+          div(style="display: inline-block;vertical-align:top; width: 175px; margin-right:10px;",
+              selectInput("selectPortfolio", "Custom Portfolio: ", custom_portfolio, selected = custom_portfolio[2])
+          ),
+          div(style="display: inline-block;vertical-align:top; width: 250px; margin-right:10px;",
+              checkboxGroupInput("selectProjType", "Display Projects With Status:", 
+                                 c("Active" = "active", "Closed" = "closed", "Pipeline" = "pipeline"),
+                                 inline = TRUE,
+                                 selected = c("active", "closed", "pipeline"))
+          ),
+          div(style="display: inline-block;vertical-align:top; width: 150px;",
+              
+              selectInput("selectOrder", "Order by:", c("Start Date" = "graph_start_date", "End Date" = "project_end_date", "Burn Rate" = "burn_rate",
+                                                        "Size ($M)" = "prorated_total_funds_managed_by_ifc"), selected = c("project_end_date"))
+          ),
+          div(style="display: inline-block;vertical-align:top; width: 150px;",
+              selectInput("orderDir", "Direction:", c("Ascending" = "ascending", "Descending" = "descending"), selected = c("ascending"))
+          )
+        )
+      )
+    )
+  })
   
     output$welcome_page <- renderUI({
     okay <- ok()
