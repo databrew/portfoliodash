@@ -111,9 +111,9 @@ body <- dashboardBody(
         fluidRow(
           shinydashboard::box(
             tags$p(style = "font-size: 20px;",
-                   'Some controls will go here'
+                   'Some stuff will go here'
             ),
-            title = 'Controls',
+            title = 'Stuff',
             status = 'warning',
             solidHeader = TRUE,
             collapsible = TRUE,
@@ -1147,43 +1147,67 @@ server <- function(input, output) {
         )
       )
     }
-    })
+  })
   
   output$control_filters <- renderUI({
-    fluidPage(
-      fluidRow(
-        box(
-          title = "Controls",
-          status = "warning",
-          solidHeader = TRUE,
-          width = NULL,
-          
-          div(style="display: inline-block;vertical-align:top; width: 175px; margin-right:10px;",
-              selectInput("selectRegion", "Region: ", c("Sub-Saharan Africa" = "SSA"), selected = "SSA")
-          ),
-          div(style="display: inline-block;vertical-align:top; width: 175px; margin-right:10px;",
-              selectInput("selectBline", "Business Line: ", c("FIG" = "FIG"), selected = "FIG")
-          ),
-          div(style="display: inline-block;vertical-align:top; width: 175px; margin-right:10px;",
-              selectInput("selectPortfolio", "Custom Portfolio: ", custom_portfolio, selected = custom_portfolio[2])
-          ),
-          div(style="display: inline-block;vertical-align:top; width: 250px; margin-right:10px;",
-              checkboxGroupInput("selectProjType", "Display Projects With Status:", 
-                                 c("Active" = "active", "Closed" = "closed", "Pipeline" = "pipeline"),
-                                 inline = TRUE,
-                                 selected = c("active", "closed", "pipeline"))
-          ),
-          div(style="display: inline-block;vertical-align:top; width: 150px;",
-              
-              selectInput("selectOrder", "Order by:", c("Start Date" = "graph_start_date", "End Date" = "project_end_date", "Burn Rate" = "burn_rate",
-                                                        "Size ($M)" = "prorated_total_funds_managed_by_ifc"), selected = c("project_end_date"))
-          ),
-          div(style="display: inline-block;vertical-align:top; width: 150px;",
-              selectInput("orderDir", "Direction:", c("Ascending" = "ascending", "Descending" = "descending"), selected = c("ascending"))
-          )
-        )
-      )
-    )
+    
+    # Note: as of now, all the below inputs are hard-coded
+    # and they're not being used anywhere
+    
+    et <- edit_type()
+    if(et %in% c('Create', 'Modify')){
+      # Show the filters only in the case of creation or modification
+      # Deletion and subscription doesn't require filters
+      
+      #Create a title which will show what you're filtering for
+      controls_title <- ifelse(et == 'Create',
+                               'Filter which projects will go in your newly created portfolio',
+                               ifelse(et == 'Modify',
+                                      'Filter which projects you want to consider adding to this portfolio', NA))
+      
+      # Create some text to explain further
+      controls_text <- ifelse(et == 'Create',
+                              'Use the below controls to narrow down potential projects to only those which match the region, business line, or status you\'re interested in.',
+                              ifelse(et == 'Modify',
+                                     'Use the below controls to narrow down the "Add projects" field above to only those which match the region, business line, or status you\'re interested in.', NA))
+      
+      fluidPage(
+        fluidRow(
+          box(
+            title = controls_title,
+            status = "warning",
+            solidHeader = TRUE,
+            width = NULL,
+            fluidPage(
+              fluidRow(p(controls_text)),
+              fluidRow(
+                column(4,
+                       selectInput("selectRegion", "Region: ", c("Sub-Saharan Africa" = "SSA"), selected = "SSA")),
+                column(4,
+                       selectInput("selectBline", "Business Line: ", c("FIG" = "FIG"), selected = "FIG")),
+                column(4,
+                       selectInput("selectPortfolio", "Custom Portfolio: ", custom_portfolio, selected = custom_portfolio[2]))
+              ),
+              fluidRow(
+                column(4,
+                       checkboxGroupInput("selectProjType", "Display Projects With Status:", 
+                                          c("Active" = "active", "Closed" = "closed", "Pipeline" = "pipeline"),
+                                          inline = TRUE,
+                                          selected = c("active", "closed", "pipeline"))),
+                column(4,
+                       selectInput("selectOrder", "Order by:", c("Start Date" = "graph_start_date", "End Date" = "project_end_date", "Burn Rate" = "burn_rate",
+                                                                 "Size ($M)" = "prorated_total_funds_managed_by_ifc"), selected = c("project_end_date"))),
+                column(4,
+                       selectInput("orderDir", "Direction:", c("Ascending" = "ascending", "Descending" = "descending"), selected = c("ascending")))
+              )
+            )  
+          )   
+        ))
+    } else {
+      NULL
+    }
+    
+    
   })
   
     output$welcome_page <- renderUI({
