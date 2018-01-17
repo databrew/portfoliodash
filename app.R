@@ -1136,17 +1136,50 @@ server <- function(input, output) {
   
   output$edit_content3 <- renderUI({ 
     if(ok()){
-      fluidPage(
-        fluidRow(
-          column(6,
-                 h3('Available portfolios'),
-                 DT::dataTableOutput('available_portfolios')),
-          column(6,
-                 h3('Your subscription details'),
-                 DT::dataTableOutput('your_package'))
+      
+      shinydashboard::box(
+        title = 'Details',
+        status = 'primary',
+        collapsible = TRUE,
+        collapsed = TRUE,
+        width = 12,
+        fluidPage(
+          fluidRow(
+            column(6,
+                   h3('Available portfolios'),
+                   DT::dataTableOutput('available_portfolios')),
+            column(6,
+                   h3('Your subscription details'),
+                   DT::dataTableOutput('your_package'))
+          ),
+          fluidRow(
+            column(12,
+                   h3('All projects'),
+                   DT::dataTableOutput('details_table'))
+          )
         )
       )
     }
+  })
+  
+  output$details_table <- DT::renderDataTable({
+    right <- 
+      portfolio_projects_all$data %>% 
+      left_join(portfolios_all$data)
+    left <- as_portfolio_all$data %>%
+      dplyr::select(project_id,
+                    project_name)  
+    details <- left_join(left, right)
+    details <- details %>%
+      group_by(project_id) %>%
+      summarise(project_name = dplyr::first(project_name),
+                portfolios = paste0(sort(unique(portfolio_name)),
+                                    collapse = ', ')) %>%
+      mutate(portfolios = ifelse(nchar(portfolios) < 1,
+                                 'None',
+                                 portfolios))
+    names(details) <- Hmisc::capitalize(gsub('_', ' ', names(details)))
+    details
   })
   
   output$control_filters <- renderUI({
