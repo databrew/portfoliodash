@@ -12,10 +12,11 @@ $ git clone https://github.com/databrew/portfoliodash
 Then `cd` into the `portfoliodash` directory. You'll note a `credentials/credentials.yaml` file. This is set up to assume an accessible, non-password protected "portfolio" database. If your database requires credentials, is running on a specific port, etc, add to the file in this format:
 
 ```
-host: some.host.net
-port: 5230 # or some other port number
-user: ausername
-password: apassword
+dbname: portfolio
+host: "w0lxsfigssa01"
+port: 5432
+user: "rscript"
+password: <ENTER CORRECT PASSWORD HERE>
 ```
 
 If you're using a version control system (like git), **be careful**: the `credentials/credentials.yaml` file is not explicitly git-ignored, so you should be sure not to `git add` it, less you risk exposing your credentials to people who shouldn't have them.
