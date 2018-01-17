@@ -9,7 +9,7 @@ sidebar <- dashboardSidebar(
     h3(textOutput('submit_text_below'), align = 'center'),
     menuItemOutput('main_menu'),
     uiOutput('username_ui'),
-    uiOutput('password_ui'),
+    # uiOutput('password_ui'),
     h6(textOutput('incorrect_password_text')),
     uiOutput('submit_ui'),
     menuItemOutput('configure_menu'),
@@ -295,13 +295,13 @@ server <- function(input, output) {
       textInput('username', 'User name')
     }
   })
-  output$password_ui <- renderUI({
-    if(ok()){
-      NULL
-    } else {
-      textInput('password', 'Password')
-    }
-  })
+  # output$password_ui <- renderUI({
+  #   if(ok()){
+  #     NULL
+  #   } else {
+  #     textInput('password', 'Password')
+  #   }
+  # })
   output$submit_ui <- renderUI({
     okay <- ok()
     if(okay){
@@ -431,8 +431,9 @@ server <- function(input, output) {
   observeEvent(input$submit,{
     out <- FALSE
     un <- input$username
-    pw <- input$password
-    if(!is.null(un) & !is.null(pw)){
+    # pw <- input$password
+    if(!is.null(un) #& !is.null(pw)
+       ){
       if(un %in% users$name){ # We'll eventually add password conditions here
         out <- TRUE
       }
@@ -1187,7 +1188,7 @@ server <- function(input, output) {
           column(2),
           shinydashboard::box(
                    tags$p(style = "font-size: 16px;",
-                          paste0('During the development phase, you can log-in using any of the names below as the username (the password can be anything).')
+                          paste0('During the development phase, you can log-in using any of the names below as the username.')
                    ),
                    DT::dataTableOutput('credentials_table'),
                    title = 'Credentials',
