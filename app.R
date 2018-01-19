@@ -1362,7 +1362,7 @@ server <- function(input, output) {
         fluidPage(
           fluidRow(
             selectInput('selected_portfolio',
-                        'Subscribed portfolios',
+                        'Select any of your subscribed portfolios below',
                         choices = portfolio_choices,
                         selected = portfolio_choices,
                         multiple = TRUE)
