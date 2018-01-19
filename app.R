@@ -1136,27 +1136,27 @@ server <- function(input, output) {
   
   output$edit_content3 <- renderUI({ 
     if(ok()){
-      
-      shinydashboard::box(
-        title = 'Details',
-        status = 'primary',
-        collapsible = TRUE,
-        collapsed = TRUE,
-        width = 12,
-        fluidPage(
-          fluidRow(
-            column(6,
-                   h3('Available portfolios'),
-                   DT::dataTableOutput('available_portfolios')),
-            column(6,
-                   h3('Your subscription details'),
-                   DT::dataTableOutput('your_package'))
-          ),
-          fluidRow(
-            column(12,
-                   h3('All projects'),
-                   DT::dataTableOutput('details_table'))
-          )
+      fluidPage(
+        fluidRow(
+          shinydashboard::box(title = 'Available portfolios',
+                              status = 'primary',
+                              collapsbile = TRUE,
+                              collapsed = TRUE,
+                              width = 6,
+                              DT::dataTableOutput('available_portfolios')),
+          shinydashboard::box(DT::dataTableOutput('your_package'),
+                              title = 'Your subscription details',
+                              status = 'primary',
+                              collapsbile = TRUE,
+                              collapsed = TRUE,
+                              width = 6)),
+        fluidRow(
+          shinydashboard::box(title = 'All projects',
+                              status = 'primary',
+                              collapsible = TRUE,
+                              collapsed = TRUE,
+                              width = 12,
+                              DT::dataTableOutput('details_table'))
         )
       )
     }

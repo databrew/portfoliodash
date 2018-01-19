@@ -69,10 +69,7 @@ get_data <- function(query = NULL,
 
     # Establish the connection
     connection_object <- credentials_connect(the_credentials)
-
-
   }
-
 
   # Conformity of input
   if((!is.null(tab) & !is.null(query)) |
