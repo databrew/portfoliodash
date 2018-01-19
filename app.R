@@ -721,16 +721,40 @@ server <- function(input, output) {
         )
       )
     } else if(et == 'Create'){
-      pr <- portfolios_all$data
-      project_choices <- as_portfolio_all$data %>%
-        group_by(project_id) %>%
-        summarise(project_name = dplyr::first(project_name))
-      project_choices_labels <- paste0(project_choices$project_name, ' (ID:',
-                                       project_choices$project_id,
-                                       ')')
-      project_choices <- project_choices$project_id
-      names(project_choices) <- project_choices_labels
-      project_choices <- sort(project_choices)
+      # Start with all projects
+      filtered_projects <- as_portfolio_all$data %>%
+        filter(!duplicated(project_id))
+      
+      # Filter down based on the filter controls
+      if(!is.null(input$filter_region)){
+        filtered_projects <- 
+          filtered_projects %>%
+          dplyr::filter(region_name %in% input$filter_region)
+      }
+      if(!is.null(input$filter_project_status)){
+        filtered_projects <- 
+          filtered_projects %>%
+          dplyr::filter(project_status %in% input$filter_project_status)
+      }
+      if(!is.null(input$filter_business_line)){
+        filtered_projects <- 
+          filtered_projects %>%
+          dplyr::filter(primary_business_line_name %in% input$filter_business_line)
+      }
+      if(!is.null(input$filter_direction)){
+        if(input$filter_direction == 'descending'){
+          filtered_projects <- filtered_projects %>% 
+            dplyr::arrange(dplyr::desc(UQ(sym(input$filter_order))))
+        } else {
+          filtered_projects <- filtered_projects %>% 
+            dplyr::arrange_(input$filter_order)
+        }
+        out <- filtered_projects %>%
+          dplyr::select(project_id, project_name) %>%
+          dplyr::filter(!duplicated(project_id))
+        po <- out$project_id
+        names(po) <- out$project_name
+      }
       fluidPage(
         fluidRow(
           textInput('create_new',
@@ -740,7 +764,7 @@ server <- function(input, output) {
         fluidRow(
           selectInput('create_vals',
                     'Which projects do you want to include in this portfolio?',
-                    choices = project_choices,
+                    choices = po,
                     multiple = TRUE)
         ),
         fluidRow(
@@ -1254,11 +1278,13 @@ server <- function(input, output) {
                        selectInput("filter_region", 
                                    "Region: ", 
                                    choices = sort(unique(as_portfolio$region_name)),
+                                   selected = sort(unique(as_portfolio$region_name))[1],
                                    multiple = TRUE)),
                 column(4,
                        selectInput("filter_business_line", 
                                    "Business Line: ", 
                                    choices = sort(unique(as_portfolio$primary_business_line_name)),
+                                   selected = sort(unique(as_portfolio$primary_business_line_name))[1],
                                    multiple = TRUE)),
                 column(4)
               ),
