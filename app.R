@@ -811,35 +811,28 @@ server <- function(input, output) {
 
         # Filter po based on the filter controls
         if(!is.null(input$filter_region)){
-          message('filtering based on region')
           filtered_projects <- 
             filtered_projects %>%
           dplyr::filter(region_name %in% input$filter_region)
         }
         if(!is.null(input$filter_project_status)){
-          message('filtering based on project status')
           filtered_projects <- 
             filtered_projects %>%
           dplyr::filter(project_status %in% input$filter_project_status)
         }
         if(!is.null(input$filter_business_line)){
-          message('filtering based on business line')
           filtered_projects <- 
             filtered_projects %>%
           dplyr::filter(primary_business_line_name %in% input$filter_business_line)
         }
         if(!is.null(input$filter_direction)){
-          message('arranging')
           if(input$filter_direction == 'descending'){
-            message('---in descending order')
             filtered_projects <- filtered_projects %>% 
               dplyr::arrange(dplyr::desc(UQ(sym(input$filter_order))))
           } else {
-            message('---in ascending order')
             filtered_projects <- filtered_projects %>% 
               dplyr::arrange_(input$filter_order)
           }
-          message('overwriting po')
           out <- filtered_projects %>%
             dplyr::select(project_id, project_name) %>%
             dplyr::filter(!duplicated(project_id))
