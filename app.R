@@ -89,7 +89,7 @@ body <- dashboardBody(
             width = 12,
             collapsible = TRUE,
             collapsed = FALSE,
-            plotOutput('ot')
+            plotOutput('spending_fish_plot')
           )
         ),
         fluidRow(
@@ -1613,7 +1613,7 @@ server <- function(input, output) {
   output$tr_text <- renderText({longevity_plot_range()})
   
   output$spending_fish_plot <- renderPlot({
-    gg_spending_fish()
+    print(gg_spending_fish())
   })
   output$spending_rates_plot <- renderPlot({
     g2
