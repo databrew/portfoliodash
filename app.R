@@ -89,7 +89,7 @@ body <- dashboardBody(
             width = 12,
             collapsible = TRUE,
             collapsed = FALSE,
-            plotOutput('spending_fish_plot')
+            plotOutput('ot')
           )
         ),
         fluidRow(
@@ -286,17 +286,26 @@ server <- function(input, output) {
     }
   })
   
-  observeEvent(input$selected_portfolio,{
+  observeEvent({
+    ok()
+    input$selected_portfolio
+    input$filter_portfolio
+  },{
     # As portfolio (just selected)
     spi <- as.numeric(input$selected_portfolio)
     ppu <- portfolio_projects_this_user$data
+    ifp <- input$filter_portfolio
     these_projects <- ppu %>%
       dplyr::filter(portfolio_id %in% spi)
     these_projects <- these_projects$project_id
     as_portfolio_selected$data <-
       as_portfolio_all$data %>%
-      filter(project_id %in% these_projects)
-    print(nrow(as_portfolio_selected$data))
+      filter(project_id %in% these_projects) 
+    if(!is.null(ifp)){
+      as_portfolio_selected$data <- 
+        as_portfolio_selected$data %>%
+        filter(project_status %in% ifp)
+    }
   })
 
   # Message about tabs
@@ -368,7 +377,7 @@ server <- function(input, output) {
       okay <- ok()
       if(okay){
         menuItem(
-          text="Configure portfolio",
+          text="Configuration",
           tabName="configure",
           icon=icon("wrench"))
       }
@@ -487,6 +496,7 @@ server <- function(input, output) {
     }
   })
 
+  # Active portfolio volume
   output$apv_plot <- renderPlot({
     # Get this user's portfolio
     ap <- as_portfolio_selected$data
@@ -507,7 +517,37 @@ server <- function(input, output) {
       geom_bar(stat = 'identity',
                position = 'dodge') +
       labs(y = 'USD',
-           title = 'Active portfolio by volume and stage') +
+           title = 'Active portfolio by region and stage') +
+      scale_fill_manual(name = '',
+                        values = cols) +
+      theme_fivethirtyeight() +
+      theme(axis.text.x = element_text(angle = 90)) +
+      scale_y_continuous(name="USD", labels = comma)
+  })
+  
+  # Active portfolio spend
+  output$aps_plot <- renderPlot({
+    # Get this user's portfolio
+    ap <- as_portfolio_selected$data
+    ap <- ap %>%
+      # filter(project_status == 'ACTIVE') %>%
+      group_by(Region = region_name,
+               Stage = project_stage) %>%
+      # I have no idea if total_fytd_expenditures is the right column here
+      summarise(Spent = sum(total_fytd_expenditures, na.rm = TRUE)) %>%
+      ungroup %>%
+      mutate(Region = gsub('and ', 'and\n', Region))
+    cols <- colorRampPalette(brewer.pal(n = 9,
+                                        name = 'Set3'))(length(unique(ap$Stage)))
+    ggplot(data = ap,
+           aes(x = Region,
+               group = Stage,
+               fill = Stage,
+               y = Spent)) +
+      geom_bar(stat = 'identity',
+               position = 'dodge') +
+      labs(y = 'USD',
+           title = 'Amount spent by region and stage') +
       scale_fill_manual(name = '',
                         values = cols) +
       theme_fivethirtyeight() +
@@ -532,26 +572,33 @@ server <- function(input, output) {
       fluidPage(
         fluidRow(
           shinydashboard::box(
-            DT::dataTableOutput('user_details'),
-            title = 'User details',
-            width = 12,
-            solidHeader = TRUE,
-            status = "primary")
-          
-        ),
-        fluidRow(
-          shinydashboard::box(
             fluidPage(
               fluidRow(
                 plotOutput('apv_plot')
               )
             ),
             title = 'Active portfolio volume',
+            width = 6,
+            solidHeader = TRUE,
+            status = "primary"),
+          shinydashboard::box(
+            fluidPage(
+              fluidRow(
+                plotOutput('aps_plot')
+              )
+            ),
+            title = 'Active portfolio spend',
+            width = 6,
+            solidHeader = TRUE,
+            status = "primary")),
+        fluidRow(
+          shinydashboard::box(
+            DT::dataTableOutput('user_details'),
+            title = 'User details',
             width = 12,
             solidHeader = TRUE,
-            status = "primary",
-            # height = main_page_plot_height,
-            height = 500)),
+            status = "primary")
+        ),
         fluidRow(
           valueBox(
             subtitle = "Active Projects", 
@@ -1357,7 +1404,8 @@ server <- function(input, output) {
     pc <- portfolios_this_user$data
     portfolio_choices <- pc$portfolio_id
     names(portfolio_choices) <- pc$portfolio_name
-    select_box <-
+    filter_choices <- sort(unique(as_portfolio$project_status))
+    select_box <- 
       shinydashboard::box(
         fluidPage(
           fluidRow(
@@ -1368,13 +1416,33 @@ server <- function(input, output) {
                         multiple = TRUE)
           )
         ),
-        title = 'Select a portfolio',
+        title = 'Select portfolio(s)',
         status = 'warning',
         solidHeader = TRUE,
         collapsible = TRUE,
         collapsed = FALSE,
-        width = 12
+        width = 6
       )
+    
+    filter_box <-
+      shinydashboard::box(
+        fluidPage(
+          fluidRow(
+            selectInput('filter_portfolio',
+                        'Filter your selected portfolio(s)',
+                        choices = filter_choices,
+                        selected = filter_choices,
+                        multiple = TRUE)
+          )
+        ),
+        title = 'Filter portfolio(s)',
+        status = 'warning',
+        solidHeader = TRUE,
+        collapsible = TRUE,
+        collapsed = FALSE,
+        width = 6
+      )
+    
     fluidPage(
       fluidRow(
         column(welcome_width,
@@ -1400,7 +1468,7 @@ server <- function(input, output) {
                  ),
           column(3))
       } else {
-        fluidRow(select_box)
+        fluidRow(select_box, filter_box)
       }
     )
   })
@@ -1545,7 +1613,7 @@ server <- function(input, output) {
   output$tr_text <- renderText({longevity_plot_range()})
   
   output$spending_fish_plot <- renderPlot({
-    g1
+    gg_spending_fish()
   })
   output$spending_rates_plot <- renderPlot({
     g2

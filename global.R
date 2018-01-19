@@ -293,5 +293,22 @@ g3 <- ggplot(data = df %>% filter(key == 'a',
            alpha = 0.6) +
   theme_fivethirtyeight()
 
+# Create spending fish background layer
+gg_spending_fish <- function(){
+  require(splines)
+  data <- data.frame(x = 1:100,
+                     y = seq(-30, 30, length = 100))
+  data$ymax <- c(seq(20, 5, length = 20), seq(5, 20, length = 60), seq(20, 1, length = 20))
+  data$ymin <- -1 * data$ymax
+  g <- ggplot(data = data,
+         aes(x = x,
+             ymax = ymax,
+             ymin = ymin)) +
+    geom_ribbon(alpha = 0.6) +
+    theme_fivethirtyeight() +
+    ylim(-50, 50)
+  return(g)
+}
+
 # Establish a connection to use during app session
 connection_object <- credentials_connect(credentials_extract())
