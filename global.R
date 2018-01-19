@@ -19,6 +19,7 @@ library(scales)
 library(httr)
 library(readr)
 library(babynames)
+library(rlang)
 
 # Source package files (if not having installed "portfoliodash")
 package_files <- dir('R')

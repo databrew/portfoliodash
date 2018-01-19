@@ -751,15 +751,15 @@ server <- function(input, output) {
       )
     } else if(et == 'Modify'){
       pr <- portfolios_all$data
-      choices <- portfolios_all$data %>%
-        # filter(!portfolio_id %in% pr$portfolio_id) %>%
+      choices <- pr %>%
         .$portfolio_name
       choices <- sort(choices)
       fluidPage(
         fluidRow(
           selectInput('modify_new',
                       'Which portfolio do you want to modify?',
-                      choices = choices),
+                      choices = choices,
+                      selected = choices[1]),
           helpText('You can only modify those portfolios to which you subscribe and are an administrator')
         ),
         
@@ -801,9 +801,52 @@ server <- function(input, output) {
   output$edit_content2 <- renderUI({
     if(ok()){
       et <- edit_type()
-      pi <- projects_in()
-      po <- projects_out()
+      
       if(et == 'Modify'){
+        pi <- projects_in()
+        po <- projects_out()
+        filtered_projects <- as_portfolio_all$data %>%
+          filter(!duplicated(project_id)) %>%
+          filter(project_id %in% po)
+
+        # Filter po based on the filter controls
+        if(!is.null(input$filter_region)){
+          message('filtering based on region')
+          filtered_projects <- 
+            filtered_projects %>%
+          dplyr::filter(region_name %in% input$filter_region)
+        }
+        if(!is.null(input$filter_project_status)){
+          message('filtering based on project status')
+          filtered_projects <- 
+            filtered_projects %>%
+          dplyr::filter(project_status %in% input$filter_project_status)
+        }
+        if(!is.null(input$filter_business_line)){
+          message('filtering based on business line')
+          filtered_projects <- 
+            filtered_projects %>%
+          dplyr::filter(primary_business_line_name %in% input$filter_business_line)
+        }
+        if(!is.null(input$filter_direction)){
+          message('arranging')
+          if(input$filter_direction == 'descending'){
+            message('---in descending order')
+            filtered_projects <- filtered_projects %>% 
+              dplyr::arrange(dplyr::desc(UQ(sym(input$filter_order))))
+          } else {
+            message('---in ascending order')
+            filtered_projects <- filtered_projects %>% 
+              dplyr::arrange_(input$filter_order)
+          }
+          message('overwriting po')
+          out <- filtered_projects %>%
+            dplyr::select(project_id, project_name) %>%
+            dplyr::filter(!duplicated(project_id))
+          po <- out$project_id
+          names(po) <- out$project_name
+        }
+        
         fluidPage(
           fluidRow(column(6,
                           selectInput('modify_add',
@@ -832,7 +875,7 @@ server <- function(input, output) {
     if(!is.null(input$modify_new)){
       et <- edit_type()
       if(et == 'Modify'){
-        this_portfolio <- input$modify_new
+        this_portfolio <- input$modify_new # this is NULL
         this_portfolio_id <- portfolios_all$data %>%
           filter(portfolio_name == this_portfolio) %>%
           .$portfolio_id
@@ -1215,23 +1258,36 @@ server <- function(input, output) {
               fluidRow(p(controls_text)),
               fluidRow(
                 column(4,
-                       selectInput("selectRegion", "Region: ", c("Sub-Saharan Africa" = "SSA"), selected = "SSA")),
+                       selectInput("filter_region", 
+                                   "Region: ", 
+                                   choices = sort(unique(as_portfolio$region_name)),
+                                   multiple = TRUE)),
                 column(4,
-                       selectInput("selectBline", "Business Line: ", c("FIG" = "FIG"), selected = "FIG")),
-                column(4,
-                       selectInput("selectPortfolio", "Custom Portfolio: ", custom_portfolio, selected = custom_portfolio[2]))
+                       selectInput("filter_business_line", 
+                                   "Business Line: ", 
+                                   choices = sort(unique(as_portfolio$primary_business_line_name)),
+                                   multiple = TRUE)),
+                column(4)
               ),
               fluidRow(
                 column(4,
-                       checkboxGroupInput("selectProjType", "Display Projects With Status:", 
-                                          c("Active" = "active", "Closed" = "closed", "Pipeline" = "pipeline"),
+                       checkboxGroupInput("filter_project_status", "Display Projects With Status:", 
+                                          sort(unique(as_portfolio$project_status)),
                                           inline = TRUE,
-                                          selected = c("active", "closed", "pipeline"))),
+                                          selected = sort(unique(as_portfolio$project_status)))),
                 column(4,
-                       selectInput("selectOrder", "Order by:", c("Start Date" = "graph_start_date", "End Date" = "project_end_date", "Burn Rate" = "burn_rate",
-                                                                 "Size ($M)" = "prorated_total_funds_managed_by_ifc"), selected = c("project_end_date"))),
+                       selectInput("filter_order", 
+                                   "Order by:", 
+                                   c("Start Date" = "implementation_start_date", 
+                                     "End Date" = "implementation_end_date", 
+                                     "Size ($M)" = "total_project_size"), 
+                                   selected = c("implementation_end_date"))),
                 column(4,
-                       selectInput("orderDir", "Direction:", c("Ascending" = "ascending", "Descending" = "descending"), selected = c("ascending")))
+                       selectInput("filter_direction", 
+                                   "Direction:", 
+                                   c("Ascending" = "ascending", 
+                                     "Descending" = "descending"), 
+                                   selected = c("ascending")))
               )
             )  
           )   
