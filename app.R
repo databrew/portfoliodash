@@ -15,6 +15,7 @@ sidebar <- dashboardSidebar(
     menuItemOutput('configure_menu'),
     menuItemOutput('longevity_menu'),
     menuItemOutput('budget_menu'),
+    menuItemOutput('results_menu'),
     menuItemOutput('flag_view_menu'),
     menuItemOutput('project_view_menu'),
     menuItemOutput('about_menu'),
@@ -103,6 +104,12 @@ body <- dashboardBody(
           )
         )
 
+      )
+    ),
+    tabItem(
+      tabName = 'results',
+      fluidPage(
+        h1('Under construction')
       )
     ),
     tabItem(
@@ -240,6 +247,9 @@ server <- function(input, output) {
   portfolios_all <- reactiveValues(data = portfolios)
   users_all <- reactiveValues(data = users)
   
+  # Create reactive datasets for the visualizations, based on selection on main page
+  as_portfolio_selected <- reactiveValues(data = as_portfolio)
+
   # Update the above reactive objects on submissions
   observeEvent({
     input$username
@@ -276,7 +286,19 @@ server <- function(input, output) {
     }
   })
   
-    
+  observeEvent(input$selected_portfolio,{
+    # As portfolio (just selected)
+    spi <- as.numeric(input$selected_portfolio)
+    ppu <- portfolio_projects_this_user$data
+    these_projects <- ppu %>%
+      dplyr::filter(portfolio_id %in% spi)
+    these_projects <- these_projects$project_id
+    as_portfolio_selected$data <-
+      as_portfolio_all$data %>%
+      filter(project_id %in% these_projects)
+    print(nrow(as_portfolio_selected$data))
+  })
+
   # Message about tabs
   observeEvent({
     input$log_out
@@ -374,6 +396,17 @@ server <- function(input, output) {
       }
     })
   
+  output$results_menu <-
+    renderMenu({
+      okay <- ok()
+      if(okay){
+        menuItem(
+          text="Results",
+          tabName="results",
+          icon=icon("cubes"))
+      }
+    })
+  
   output$flag_view_menu <-
     renderMenu({
       okay <- ok()
@@ -454,54 +487,32 @@ server <- function(input, output) {
     }
   })
 
-  output$fap_plot <- renderGvis({
-    dat <- as_portfolio %>%
-      group_by(status = region_name) %>%
-      summarise(percent = n())
-    dat$fraction = dat$percent / sum(dat$percent)
-    dat = dat[order(dat$fraction), ]
-    dat$ymax = cumsum(dat$fraction)
-    dat$ymin = c(0, head(dat$ymax, n=-1))
-    
-    # dat$status <- paste0(dat$status, ': ', dat$percent, '%')
-    cols <- colorRampPalette(brewer.pal(n = 9, 'Spectral'))(length(unique(dat$status)))
-    
-    doughnut <- gvisPieChart(dat,
-                          options=list(
-                            # width=500,
-                            height="100%",
-                            legend='none',
-                            colors = paste0('[', paste0("'", cols, "'", collapse = ',' ), ']', collapse = NULL),
-                            pieSliceText='label',
-                            pieHole=0.5),
-                          chartid="doughnut")
-    doughnut
-  })
-  
-  output$apv_plot <- renderGvis({
-    
-    dat <- as_portfolio %>%
-      group_by(status = region_name) %>%
-      summarise(volume = sum(total_project_size, na.rm = TRUE))
-    dat$fraction = dat$volume / sum(dat$volume)
-    dat = dat[order(dat$fraction), ]
-    dat$ymax = cumsum(dat$fraction)
-    dat$ymin = c(0, head(dat$ymax, n=-1))
-    
-    cols <- colorRampPalette(brewer.pal(n = 9, 'Spectral'))(length(unique(dat$status)))
-    
-    d <- gvisPieChart(dat,
-                             options=list(
-                               # width=500,
-                               height="100%",
-                               legend='none',
-                               colors = paste0('[', paste0("'", cols, "'", collapse = ',' ), ']', collapse = NULL),
-                               pieSliceText='label',
-                               pieHole=0.5),
-                             chartid="d")
-    d
-    
-    
+  output$apv_plot <- renderPlot({
+    # Get this user's portfolio
+    ap <- as_portfolio_selected$data
+    ap <- ap %>%
+      filter(project_status == 'ACTIVE') %>%
+      group_by(Region = region_name,
+               Stage = project_stage) %>%
+      summarise(Volume = sum(total_funding, na.rm = TRUE)) %>%
+      ungroup %>%
+      mutate(Region = gsub('and ', 'and\n', Region))
+    cols <- colorRampPalette(brewer.pal(n = 9,
+                                        name = 'Set3'))(length(unique(ap$Stage)))
+    ggplot(data = ap,
+           aes(x = Region,
+               group = Stage,
+               fill = Stage,
+               y = Volume)) +
+      geom_bar(stat = 'identity',
+               position = 'dodge') +
+      labs(y = 'USD',
+           title = 'Active portfolio by volume and stage') +
+      scale_fill_manual(name = '',
+                        values = cols) +
+      theme_fivethirtyeight() +
+      theme(axis.text.x = element_text(angle = 90)) +
+      scale_y_continuous(name="USD", labels = comma)
   })
   
   output$user_details <- DT::renderDataTable({
@@ -530,20 +541,17 @@ server <- function(input, output) {
         ),
         fluidRow(
           shinydashboard::box(
-            # plotOutput('fap_plot'),
-            htmlOutput('fap_plot'),
-            title = 'Financially active portfolio',
-            width = 6,
-            solidHeader = TRUE,
-            status = "primary",
-            height = main_page_plot_height),
-          shinydashboard::box(
-            htmlOutput('apv_plot'),
+            fluidPage(
+              fluidRow(
+                plotOutput('apv_plot')
+              )
+            ),
             title = 'Active portfolio volume',
-            width = 6,
+            width = 12,
             solidHeader = TRUE,
             status = "primary",
-            height = main_page_plot_height)),
+            # height = main_page_plot_height,
+            height = 500)),
         fluidRow(
           valueBox(
             subtitle = "Active Projects", 
@@ -644,8 +652,15 @@ server <- function(input, output) {
             solidHeader = TRUE,
             collapsible = TRUE,
             collapsed = FALSE,
-            width = 8
-          )
+            width = 5
+          ),
+          shinydashboard::box(title = 'Your subscription details',
+                              status = 'primary',
+                              collapsbile = TRUE,
+                              collapsed = TRUE,
+                              solidHeader = TRUE,
+                              width = 3,
+                              DT::dataTableOutput('your_package'))
         ),
         uiOutput('editing'),
         uiOutput('edit_content2'),
@@ -1200,16 +1215,10 @@ server <- function(input, output) {
         fluidRow(
           shinydashboard::box(title = 'Available portfolios',
                               status = 'primary',
-                              collapsbile = TRUE,
+                              collapsible = TRUE,
                               collapsed = TRUE,
-                              width = 6,
-                              DT::dataTableOutput('available_portfolios')),
-          shinydashboard::box(DT::dataTableOutput('your_package'),
-                              title = 'Your subscription details',
-                              status = 'primary',
-                              collapsbile = TRUE,
-                              collapsed = TRUE,
-                              width = 6)),
+                              width = 12,
+                              DT::dataTableOutput('available_portfolios'))),
         fluidRow(
           shinydashboard::box(title = 'All projects',
                               status = 'primary',
@@ -1345,6 +1354,27 @@ server <- function(input, output) {
         collapsed = cl,
         width = 12
       )
+    pc <- portfolios_this_user$data
+    portfolio_choices <- pc$portfolio_id
+    names(portfolio_choices) <- pc$portfolio_name
+    select_box <-
+      shinydashboard::box(
+        fluidPage(
+          fluidRow(
+            selectInput('selected_portfolio',
+                        'Subscribed portfolios',
+                        choices = portfolio_choices,
+                        selected = portfolio_choices,
+                        multiple = TRUE)
+          )
+        ),
+        title = 'Select a portfolio',
+        status = 'warning',
+        solidHeader = TRUE,
+        collapsible = TRUE,
+        collapsed = FALSE,
+        width = 12
+      )
     fluidPage(
       fluidRow(
         column(welcome_width,
@@ -1370,7 +1400,7 @@ server <- function(input, output) {
                  ),
           column(3))
       } else {
-        fluidRow()
+        fluidRow(select_box)
       }
     )
   })

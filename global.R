@@ -20,6 +20,8 @@ library(httr)
 library(readr)
 library(babynames)
 library(rlang)
+library(scales)
+options(scipen = '999')
 
 # Source package files (if not having installed "portfoliodash")
 package_files <- dir('R')
