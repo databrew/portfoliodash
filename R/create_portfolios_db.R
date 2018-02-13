@@ -24,7 +24,7 @@ create_portfolios_db <- function(portfolios = NULL,
   }
   
   if(is.null(portfolios)){
-    as_portfolio <- get_data(tab = 'as_portfolio',
+    as_portfolio <- get_data(query = 'SELECT* FROM portfolio.as_portfolio',
                              connection_object = connection_object)
     portfolios <-
       as_portfolio %>%
@@ -36,7 +36,8 @@ create_portfolios_db <- function(portfolios = NULL,
   }
   
   # Upload it to the database
-  copy_to(connection_object, portfolios, "portfolios",
+  copy_to(connection_object, portfolios,
+          dbplyr::in_schema("portfolio", "portfolios"),
           temporary = FALSE,
           overwrite = TRUE)
 }

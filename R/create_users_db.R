@@ -9,6 +9,7 @@
 #' @import dplyr
 #' @import RPostgreSQL
 #' @import babynames
+#' @import dbplyr
 #' @export
 
 create_users_db <- function(users = NULL,
@@ -16,11 +17,17 @@ create_users_db <- function(users = NULL,
   
   # If no users, create one
   if(is.null(users)){
-    babynames <- babynames::babynames
-    users <- 
-      data_frame(user_id = 1:26,
-                 name = babynames$name[sample(1:nrow(babynames), 26, replace = FALSE)])
-    users$email <- paste0(users$name, '@aol.com')
+    # babynames <- babynames::babynames
+    # users <- 
+    #   data_frame(user_id = 1:26,
+    #              name = babynames$name[sample(1:nrow(babynames), 26, replace = FALSE)])
+    names <- c('Soren', 'Joe', 'Oleksiy')
+    users <- data_frame(user_id = 1:3,
+                        name = names)
+    
+    users$email <- c('sheitmann@ifc.org', 
+                     'oanokhin@worldbank.org',
+                     'jbrew1@worldbank.org')
     users$upi <- sample(100000:999999, nrow(users), replace = FALSE)
     users$last_login <- as.POSIXct(Sys.time())
   }
@@ -35,7 +42,9 @@ create_users_db <- function(users = NULL,
     connection_object <- credentials_connect(the_credentials)
   }
   
-  copy_to(connection_object, users, "users",
+  copy_to(connection_object, 
+          users, 
+          dbplyr::in_schema("portfolio", "users"),
           temporary = FALSE,
           overwrite = TRUE)
 }

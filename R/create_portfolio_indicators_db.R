@@ -25,7 +25,7 @@ create_portfolio_indicators_db <- function(portfolio_indicators = NULL,
   
   # If not table supplied, create one based on database
   if(is.null(portfolio_indicators)){
-    as_portfolio <- get_data(tab = 'as_portfolio',
+    as_portfolio <- get_data(query = 'SELECT * FROM portfolio.as_portfolio',
                              connection_object = connection_object)
     portfolio_indicators <- as_portfolio %>%
       dplyr::select(primary_business_line_code, project_id) %>%
@@ -40,7 +40,8 @@ create_portfolio_indicators_db <- function(portfolio_indicators = NULL,
   }
   
   # Upload it to the database
-  copy_to(connection_object, portfolio_indicators, "portfolio_indicators",
+  copy_to(connection_object, portfolio_indicators,
+          dbplyr::in_schema("portfolio", "portfolio_indicators"),
           temporary = FALSE,
           overwrite = TRUE)
 }

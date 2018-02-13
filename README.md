@@ -9,17 +9,8 @@ Clone this repository, so that you can make modifications to some of the underly
 $ git clone https://github.com/databrew/portfoliodash
 ```
 
-Then `cd` into the `portfoliodash` directory. You'll note a `credentials/credentials.yaml` file. This is set up to assume an accessible, non-password protected "portfolio" database. If your database requires credentials, is running on a specific port, etc, add to the file in this format:
 
-```
-dbname: portfolio
-host: "w0lxsfigssa01"
-port: 5432
-user: "rscript"
-password: <ENTER CORRECT PASSWORD HERE>
-```
-
-If you're using a version control system (like git), **be careful**: the `credentials/credentials.yaml` file is not explicitly git-ignored, so you should be sure not to `git add` it, less you risk exposing your credentials to people who shouldn't have them.
+## Building the app as a package
 
 Having now set up your credentials, document and install the package from within R like this (make sure you're in the "portfoliodash" directory):
 
@@ -34,9 +25,35 @@ You'll now have the package on your system. You can confirm this by running:
 library(portfoliodash)
 ```
 
-Even though the library is set up, the app is not quite ready to run. Since some of the data is private, we don't store it as part of the library code - it needs to be set up separately. That's what the next section covers.
+## Connecting to the database
 
-## Getting data  
+Next `cd` into the `portfoliodash` directory. You'll note a `credentials/credentials.yaml` file. This should have one of the w following formats:
+
+
+*Format 1: for running on WB servers:* 
+
+```
+dbname: portfolio
+host: "w0lxsfigssa01"
+port: 5432
+user: "rscript"
+password: <PASSWORD GOES HERE>
+```
+
+*Format 2: for running on AWS servers:* 
+
+```
+host: "databrewdb.cfejspjhdciw.us-east-2.rds.amazonaws.com"
+port: 8080
+dbname: portfolio
+user: "worldbank"
+password: <PASSWORD GOES HERE>
+```
+
+
+If you're using a version control system (like git), **be careful**: the `credentials/credentials.yaml` file is not explicitly git-ignored, so you should be sure not to `git add` it, less you risk exposing your credentials to people who shouldn't have them.
+
+## Getting data onto local database
 
 You've now set up the package, but you also need to set up the data on which this package relies. There are two data dependencies: some flat files, and a PostgreSQL database.
 
@@ -98,8 +115,7 @@ Data were emailed to developers on January 7, 2018. Data are downloadable (to au
 - Extract the tables: `psql -d portfolio -f as_portfolio\ \(with\ data\).sql`
 - Go back up a level: `cd ..`
 - Open a psql session in portfolio db: `psql portfolio`
-- Set the search path for the schema: `SET search_path TO portfolio;`
-- Confirm that the tables are there: `\dt` should return:
+- Confirm that the tables are there: `\dt portfolio.*` should return:
 ```
              List of relations
   Schema   |     Name     | Type  |  Owner  
@@ -107,18 +123,12 @@ Data were emailed to developers on January 7, 2018. Data are downloadable (to au
  portfolio | as_portfolio | table | joebrew
 (1 row)
 ```
-- Having confirmed the above, permanently alter the `search_path` for the portfolio database: `ALTER DATABASE portfolio SET search_path TO portfolio;`
-- To query the table, you can use SQL as such:
-```
-SELECT * FROM portfolio.as_portfolio LIMIT 5;
-```
-
 
 ##### Setting up the as_results table
 
 - Go back into the data directory: `cd data`
 - Load the as_results table into the database: `psql -d portfolio -f run_insert.sql`
-- Open an interactive psql session (`psql portfolio`) and confirm the presence of the `as_results` relation: `\dt` should return
+- Open an interactive psql session (`psql portfolio`) and confirm the presence of the `as_results` relation: `\dt portfolio.*` should return
 ```
                  List of relations
   Schema   |         Name         | Type  |  Owner  
@@ -180,6 +190,45 @@ The database is now set up and ready for use. To inspect the entire schema run t
 ```
 select table_schema, table_name, column_name, data_type from information_schema.columns where table_schema = 'portfolio';
 ```
+
+##### Creating a dump
+
+Having now created the database from scratch, consider generating a dump using the pg_dump utility (for the purposes of backup or upload to AWS servers):
+
+```
+pg_dump -d portfolio -f /path/to/local/destination.sql
+```
+
+
+##### Getting data onto AWS database
+
+This section only applies to the person managing the AWS database. Post-dump (ie, the above steps), data can be uploaded to the AWS database.
+
+- Open a psql session within our AWS DB instance.
+
+```
+psql --host=portfolio.cfejspjhdciw.us-east-2.rds.amazonaws.com --port=8080 --username=joebrew --dbname=portfolio 
+```
+
+- Restore the locally created dump from within psql
+``` 
+\i /path/to/dump/portfolio.sql
+```
+
+
+Create a user named worldbank, and grant privileges.
+
+```
+create role worldbank with password '<PASSWORD HERE>' login;
+grant rds_superuser to worldbank;
+```
+
+Ctrl+d to log out, and then log in as worldbank to confirm it's working:
+
+```
+psql --host=portfolio.cfejspjhdciw.us-east-2.rds.amazonaws.com --port=8080 --username=worldbank --dbname=portfolio 
+```
+
 
 ## Other utilities
 

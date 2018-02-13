@@ -26,12 +26,12 @@ create_portfolio_users_db <- function(portfolio_users = NULL,
   # Use the portfolio projects table to subscribe users
   # to some portfolios
   if(is.null(portfolio_users)){
-    pp <- get_data(tab = 'portfolio_projects',
+    pp <- get_data(query = 'SELECT * FROM portfolio.portfolio_projects',
                    connection_object = connection_object)
     pp <- pp %>% dplyr::select(portfolio_id) %>%
       dplyr::filter(!duplicated(portfolio_id))
     pu <- expand.grid(portfolio_id = pp$portfolio_id,
-                      user_id = 1:26)
+                      user_id = 1:3)
     # Randomly re-order rows
     pu <- pu[sample(1:nrow(pu), nrow(pu), replace = FALSE),]
     # Keep only 3 portfolios per user
@@ -56,7 +56,8 @@ create_portfolio_users_db <- function(portfolio_users = NULL,
   }
   
   # Upload it to the database
-  copy_to(connection_object, portfolio_users, "portfolio_users",
+  copy_to(connection_object, portfolio_users, 
+          dbplyr::in_schema("portfolio", "portfolio_users"),
           temporary = FALSE,
           overwrite = TRUE)
 }

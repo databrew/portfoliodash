@@ -8,6 +8,7 @@
 #' @import DBI
 #' @import dplyr
 #' @import RPostgreSQL
+#' @import dbplyr
 #' @export
 
 create_portfolio_projects_db <- function(portfolio_projects = NULL,
@@ -25,8 +26,7 @@ create_portfolio_projects_db <- function(portfolio_projects = NULL,
   
   # If not table supplied, create one based on database
   if(is.null(portfolio_projects)){
-    as_portfolio <- get_data(tab = 'as_portfolio',
-                             connection_object = connection_object)
+    as_portfolio <- get_data(query = "SELECT * FROM portfolio.as_portfolio")
     portfolio_projects <- as_portfolio %>%
       dplyr::select(primary_business_line_code, project_id) %>%
       dplyr::rename(portfolio_name = primary_business_line_code) %>%
@@ -38,7 +38,9 @@ create_portfolio_projects_db <- function(portfolio_projects = NULL,
   }
   
   # Upload it to the database
-  copy_to(connection_object, portfolio_projects, "portfolio_projects",
+  copy_to(connection_object, 
+          portfolio_projects, 
+          dbplyr::in_schema("portfolio", "portfolio_projects"),
           temporary = FALSE,
           overwrite = TRUE)
 }

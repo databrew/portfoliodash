@@ -8,6 +8,7 @@
 #' @import dplyr
 #' @import RPostgreSQL
 #' @import readr
+#' @import dbplyr
 #' @export
 #' @examples
 #' 2+2
@@ -30,8 +31,8 @@ populate_as_results <- function(csv = 'data/portfolio.as_results.csv',
   # results <- get_data(tab = 'as_results', connection_object = the_co)
   copy_to(the_co, 
           ar, 
-          "as_results",
+          dbplyr::in_schema("portfolio", "as_results"),
           temporary = FALSE,
           overwrite = TRUE)
   
-}
+  }
