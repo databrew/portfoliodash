@@ -31,7 +31,7 @@ You mention that we should filter by "dept" and "product" (see below).
 - By department, do you mean `owning_department_code`?
 - By product, do you mean the semi-colon separated values of `business_line_product_pcts1`?
 
-![](img2/Selection_005.png)
+![](img2/Selection_004.png)
 
 ## Question 6: How to simplify the first page?
 
