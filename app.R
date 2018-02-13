@@ -274,22 +274,30 @@ server <- function(input, output) {
   # Create reactive user and user_id values
   user <- reactiveVal(value = NULL)
   user_id <- reactiveVal(value = NULL)
-  observeEvent({
-    input$email
-    input$submit
-  },{
-    if(ok()){
-      
-      u <- input$email
-      un <- users %>% filter(email == u)
-      message(u)
-      user(u)
-      uid <- users %>% filter(email == u) %>% .$user_id
-      user_id(uid)
-      message('Logged in as : ', un, ' which is user_id: ', uid)
+  ok <- reactiveVal(value = FALSE)
+  # Evlaute whether a correct username / password has been entered
+  
+  observeEvent(input$submit,{
+    out <- FALSE
+    un <- input$email
+    if(!is.null(un)){
+      if(un %in% users$email){ 
+        out <- TRUE
+        user(un)
+        uid <- users %>% filter(email == un) %>% .$user_id
+        user_id(uid)
+        message('Logged in as : ', un, ' which is user_id: ', uid)
+      }
     }
+    ok(out)
   })
   
+  observeEvent(input$log_out,{
+    ok(FALSE)
+    user(NULL)
+  })
+  
+
   # Based on user and user_id, create reactive datasets
   as_portfolio_this_user <- reactiveValues(data = as_portfolio)
   portfolio_projects_this_user <- reactiveValues(data = portfolio_projects)
@@ -309,11 +317,11 @@ server <- function(input, output) {
 
   # Update the above reactive objects on submissions
   observeEvent({
-    input$email
     input$submit
   },{
     if(ok()){
       uu <- user_id()
+      message('uu is ', uu)
       ur <- users_this_user$data
       
       # Users
@@ -539,26 +547,7 @@ server <- function(input, output) {
     }
   })
   
-  # Evlaute whether a correct username / password has been entered
-  ok <- reactiveVal(value = FALSE)
-  observeEvent(input$submit,{
-    out <- FALSE
-    un <- input$email
-    message('UN IS ', un)
-    # pw <- input$password
-    if(!is.null(un) #& !is.null(pw)
-       ){
-      if(un %in% users$email){ # We'll eventually add password conditions here
-        out <- TRUE
-      }
-    }
-    ok(out)
-  }
-  )
-  observeEvent(input$log_out,{
-    ok(FALSE)
-    user(NULL)
-  })
+  
   
   output$text1 <- renderText({
     if(ok()){
@@ -1317,7 +1306,7 @@ server <- function(input, output) {
                               width = 12,
                               DT::dataTableOutput('available_portfolios'))),
         fluidRow(
-          shinydashboard::box(title = 'All projects',
+          shinydashboard::box(title = 'All projects in portfolio(s)',
                               status = 'primary',
                               collapsible = TRUE,
                               collapsed = TRUE,
