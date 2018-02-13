@@ -200,7 +200,7 @@ body <- dashboardBody(
         br(),
         fluidRow(div(img(src='partnership logo.bmp', align = "center"), style="text-align: center;"),
                  br(),
-                 div(a(actionButton(inputId = "email", label = "Contact", 
+                 div(a(actionButton(inputId = "email_button", label = "Contact", 
                                     icon = icon("envelope", lib = "font-awesome")),
                        href="mailto:sheitmann@ifc.org",
                        align = 'center')), 
@@ -275,15 +275,18 @@ server <- function(input, output) {
   user <- reactiveVal(value = NULL)
   user_id <- reactiveVal(value = NULL)
   observeEvent({
-    input$username
+    input$email
     input$submit
   },{
     if(ok()){
-      u <- input$username
+      
+      u <- input$email
+      un <- users %>% filter(email == u)
+      message(u)
       user(u)
-      uid <- users %>% filter(name == u) %>% .$user_id
+      uid <- users %>% filter(email == u) %>% .$user_id
       user_id(uid)
-      message('Logged in as username: ', u, ' which is user_id: ', uid)
+      message('Logged in as : ', un, ' which is user_id: ', uid)
     }
   })
   
@@ -306,7 +309,7 @@ server <- function(input, output) {
 
   # Update the above reactive objects on submissions
   observeEvent({
-    input$username
+    input$email
     input$submit
   },{
     if(ok()){
@@ -377,7 +380,7 @@ server <- function(input, output) {
     if(ok()){
       NULL
     } else {
-      textInput('username', 'User name')
+      textInput('email', 'Email:', value = 'jbrew1@worldbank.org')
     }
   })
   # output$password_ui <- renderUI({
@@ -414,7 +417,14 @@ server <- function(input, output) {
   })
   output$submit_text_below <-
     renderText({
-      user()
+      ue <- user()
+      if(!is.null(ue)){
+        un <- users %>% filter(email == ue)
+        un$name
+      } else {
+        NULL
+      }
+      
     })
 
   output$main_menu <-
@@ -526,11 +536,12 @@ server <- function(input, output) {
   ok <- reactiveVal(value = FALSE)
   observeEvent(input$submit,{
     out <- FALSE
-    un <- input$username
+    un <- input$email
+    message('UN IS ', un)
     # pw <- input$password
     if(!is.null(un) #& !is.null(pw)
        ){
-      if(un %in% users$name){ # We'll eventually add password conditions here
+      if(un %in% users$email){ # We'll eventually add password conditions here
         out <- TRUE
       }
     }
@@ -556,58 +567,57 @@ server <- function(input, output) {
     ap <- as_portfolio_selected$data
     ap <- ap %>%
       filter(project_status == 'ACTIVE') %>%
-      group_by(Region = region_name,
-               Stage = project_stage) %>%
-      summarise(Volume = sum(total_funding, na.rm = TRUE)) %>%
+      group_by(Stage = project_stage) %>%
+      summarise(Amount = sum(total_funding, na.rm = TRUE)) %>%
       ungroup %>%
-      mutate(Region = gsub('and ', 'and\n', Region))
-    cols <- colorRampPalette(brewer.pal(n = 9,
-                                        name = 'Set3'))(length(unique(ap$Stage)))
-    ggplot(data = ap,
-           aes(x = Region,
-               group = Stage,
-               fill = Stage,
-               y = Volume)) +
-      geom_bar(stat = 'identity',
-               position = 'dodge') +
-      labs(y = 'USD',
-           title = 'Active portfolio by region and stage') +
-      scale_fill_manual(name = '',
-                        values = cols) +
-      theme_fivethirtyeight() +
-      theme(axis.text.x = element_text(angle = 90)) +
-      scale_y_continuous(name="USD", labels = comma)
-  })
-  
-  # Active portfolio spend
-  output$aps_plot <- renderPlot({
-    # Get this user's portfolio
-    ap <- as_portfolio_selected$data
-    ap <- ap %>%
+      # for now, hard-coding the filter of a few levels
+      filter(!Stage %in% c('UNKNOWN', 'PRE-PIPELINE', 'OTHER'))
+    
+    
+    ap$fraction = ap$Amount / sum(ap$Amount)
+    ap = ap[order(ap$fraction), ]
+    ap$ymax = cumsum(ap$fraction)
+    ap$ymin = c(0, head(ap$ymax, n=-1))
+    ap$grp <- 'Active volume'
+    
+    ap2 <- as_portfolio_selected$data
+    ap2 <- ap2 %>%
       # filter(project_status == 'ACTIVE') %>%
-      group_by(Region = region_name,
-               Stage = project_stage) %>%
+      group_by(Stage = project_stage) %>%
       # I have no idea if total_fytd_expenditures is the right column here
-      summarise(Spent = sum(total_fytd_expenditures, na.rm = TRUE)) %>%
-      ungroup %>%
-      mutate(Region = gsub('and ', 'and\n', Region))
+      summarise(Amount = sum(total_fytd_expenditures, na.rm = TRUE)) %>%
+      ungroup  %>%
+      # for now, hard-coding the filter of a few levels
+      filter(!Stage %in% c('UNKNOWN', 'PRE-PIPELINE', 'OTHER'))
+    
+    ap2$fraction = ap2$Amount / sum(ap2$Amount)
+    ap2 = ap2[order(ap2$fraction), ]
+    ap2$ymax = cumsum(ap2$fraction)
+    ap2$ymin = c(0, head(ap2$ymax, n=-1))
+    ap2$grp <- 'Amount spent'
+    
+    # Combine active volume and amount spent
+    ap <- bind_rows(ap, ap2)
+    
     cols <- colorRampPalette(brewer.pal(n = 9,
                                         name = 'Set3'))(length(unique(ap$Stage)))
-    ggplot(data = ap,
-           aes(x = Region,
-               group = Stage,
-               fill = Stage,
-               y = Spent)) +
-      geom_bar(stat = 'identity',
-               position = 'dodge') +
-      labs(y = 'USD',
-           title = 'Amount spent by region and stage') +
+    
+    ggplot(data = ap, 
+           aes(fill=Stage, ymax=ymax, ymin=ymin, xmax=4, xmin=3)) +
+      geom_rect(colour="grey30", size = 0.5) +
+      coord_polar(theta="y") +
+      xlim(c(0, 4)) +
+      theme_fivethirtyeight() +
+      theme(panel.grid=element_blank()) +
+      theme(axis.text=element_blank()) +
+      theme(axis.ticks=element_blank()) +
       scale_fill_manual(name = '',
                         values = cols) +
-      theme_fivethirtyeight() +
-      theme(axis.text.x = element_text(angle = 90)) +
-      scale_y_continuous(name="USD", labels = comma)
-  })
+      guides(fill=guide_legend(ncol=2)) +
+      facet_wrap(~grp)
+    
+      })
+
   
   output$user_details <- DT::renderDataTable({
     if(ok()){
@@ -624,35 +634,14 @@ server <- function(input, output) {
     okay <- ok()
     if(okay){
       fluidPage(
-        fluidRow(
-          shinydashboard::box(
-            fluidPage(
-              fluidRow(
-                plotOutput('apv_plot')
-              )
-            ),
-            title = 'Active portfolio volume',
-            width = 6,
-            solidHeader = TRUE,
-            status = "primary"),
-          shinydashboard::box(
-            fluidPage(
-              fluidRow(
-                plotOutput('aps_plot')
-              )
-            ),
-            title = 'Active portfolio spend',
-            width = 6,
-            solidHeader = TRUE,
-            status = "primary")),
-        fluidRow(
-          shinydashboard::box(
-            DT::dataTableOutput('user_details'),
-            title = 'User details',
-            width = 12,
-            solidHeader = TRUE,
-            status = "primary")
-        ),
+        # fluidRow(
+        #   shinydashboard::box(
+        #     DT::dataTableOutput('user_details'),
+        #     title = 'User details',
+        #     width = 12,
+        #     solidHeader = TRUE,
+        #     status = "primary")
+        # ),
         fluidRow(
           valueBox(
             subtitle = "Active Projects", 
@@ -1475,7 +1464,7 @@ server <- function(input, output) {
         solidHeader = TRUE,
         collapsible = TRUE,
         collapsed = FALSE,
-        width = 6
+        width = 3
       )
     
     filter_box <-
@@ -1494,8 +1483,21 @@ server <- function(input, output) {
         solidHeader = TRUE,
         collapsible = TRUE,
         collapsed = FALSE,
-        width = 6
+        width = 3
       )
+    
+    chart_box <- 
+      shinydashboard::box(
+        fluidPage(
+          fluidRow(
+            plotOutput('apv_plot', height = '240px')
+          )
+        ),
+        title = 'Portfolio volume and spending by stage',
+        width = 4,
+        height = '320px',
+        solidHeader = TRUE,
+        status = "primary")
     
     fluidPage(
       fluidRow(
@@ -1522,12 +1524,12 @@ server <- function(input, output) {
                  ),
           column(3))
       } else {
-        fluidRow(select_box, filter_box)
+        fluidRow(select_box, filter_box, column(2), chart_box)
       }
     )
   })
   output$credentials_table <- DT::renderDataTable({
-    x <- users %>% dplyr::select(name)
+    x <- users %>% dplyr::select(email)
     DT::datatable(x,
                   options = list(dom = 't'),
                   rownames = FALSE,

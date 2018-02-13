@@ -55,6 +55,8 @@ If you're using a version control system (like git), **be careful**: the `creden
 
 ## Getting data onto local database
 
+(The below only applies to database managers, not an R-only programmer or someone just running the app.)
+
 You've now set up the package, but you also need to set up the data on which this package relies. There are two data dependencies: some flat files, and a PostgreSQL database.
 
 ### Flat files
@@ -240,5 +242,5 @@ creds <- credentials_extract()
 # Connect to the database
 co <- credentials_connect(creds)
 # Get data
-up <- get_data(tab = 'user_portfolio', connection_object = co)
+up <- get_data(query = 'SELECT * FROM portfolios.user_portfolio', connection_object = co)
 ```
