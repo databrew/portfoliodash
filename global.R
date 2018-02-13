@@ -311,3 +311,8 @@ gg_spending_fish <- function(){
 
 # Establish a connection to use during app session
 connection_object <- credentials_connect(credentials_extract())
+
+# Create a dummy id for use in as_portfolio
+as_portfolio <- as_portfolio %>%
+  arrange(dataset_date) 
+as_portfolio$id <- 1:nrow(as_portfolio)

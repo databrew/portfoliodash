@@ -562,6 +562,11 @@ server <- function(input, output) {
     # Get this user's portfolio
     ap <- as_portfolio_selected$data
     ap <- ap %>%
+      # Keep only the last observation for each project
+      arrange(dataset_date) %>%
+      group_by(project_id) %>%
+      filter(id == dplyr::last(id)) %>%
+      ungroup %>%
       filter(project_status == 'ACTIVE') %>%
       group_by(Stage = project_stage) %>%
       summarise(Amount = sum(total_funding, na.rm = TRUE)) %>%
@@ -578,6 +583,11 @@ server <- function(input, output) {
     
     ap2 <- as_portfolio_selected$data
     ap2 <- ap2 %>%
+      # Keep only the last observation for each project
+      arrange(dataset_date) %>%
+      group_by(project_id) %>%
+      filter(id == dplyr::last(id)) %>%
+      ungroup %>%
       # filter(project_status == 'ACTIVE') %>%
       group_by(Stage = project_stage) %>%
       # I have no idea if total_fytd_expenditures is the right column here
