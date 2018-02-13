@@ -347,11 +347,13 @@ server <- function(input, output) {
     ok()
     input$selected_portfolio
     input$filter_portfolio
+    input$filter_portfolio_region
   },{
     # As portfolio (just selected)
     spi <- as.numeric(input$selected_portfolio)
     ppu <- portfolio_projects_this_user$data
     ifp <- input$filter_portfolio
+    ifpr <- input$filter_portfolio_region
     these_projects <- ppu %>%
       dplyr::filter(portfolio_id %in% spi)
     these_projects <- these_projects$project_id
@@ -362,6 +364,11 @@ server <- function(input, output) {
       as_portfolio_selected$data <- 
         as_portfolio_selected$data %>%
         filter(project_status %in% ifp)
+    }
+    if(!is.null(ifpr)){
+      as_portfolio_selected$data <- 
+        as_portfolio_selected$data %>%
+        filter(region_name %in% ifpr)
     }
   })
 
@@ -1464,7 +1471,7 @@ server <- function(input, output) {
         solidHeader = TRUE,
         collapsible = TRUE,
         collapsed = FALSE,
-        width = 4
+        width = 3
       )
     
     filter_box <-
@@ -1472,9 +1479,16 @@ server <- function(input, output) {
         fluidPage(
           fluidRow(
             selectInput('filter_portfolio',
-                        'Filter your selected portfolio(s)',
+                        'Filter your selected portfolio(s) by status',
                         choices = filter_choices,
                         selected = filter_choices,
+                        multiple = TRUE)
+          ),
+          fluidRow(
+            selectInput('filter_portfolio_region',
+                        'Filter your selected portfolio(s) by region',
+                        choices = sort(unique(as_portfolio$region_name)),
+                        selected = sort(unique(as_portfolio$region_name)),
                         multiple = TRUE)
           )
         ),
@@ -1483,7 +1497,7 @@ server <- function(input, output) {
         solidHeader = TRUE,
         collapsible = TRUE,
         collapsed = FALSE,
-        width = 4
+        width = 5
       )
     
     chart_box <- 
