@@ -1464,7 +1464,7 @@ server <- function(input, output) {
         solidHeader = TRUE,
         collapsible = TRUE,
         collapsed = FALSE,
-        width = 3
+        width = 4
       )
     
     filter_box <-
@@ -1483,7 +1483,7 @@ server <- function(input, output) {
         solidHeader = TRUE,
         collapsible = TRUE,
         collapsed = FALSE,
-        width = 3
+        width = 4
       )
     
     chart_box <- 
@@ -1522,9 +1522,9 @@ server <- function(input, output) {
                    collapsed = FALSE,
                    width = 7
                  ),
-          column(3))
+          column(2))
       } else {
-        fluidRow(select_box, filter_box, column(2), chart_box)
+        fluidRow(select_box, filter_box,  chart_box)
       }
     )
   })
