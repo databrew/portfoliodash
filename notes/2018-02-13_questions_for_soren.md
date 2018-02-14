@@ -55,7 +55,3 @@ My understanding is that the `dataset_date` field is the date of observation for
 
 (For end date, I could use latest observation of `dataset_date`, but many projects have only one `dataset_date`)
 
-## Question 10: What counts as "active"?
-
-I'm currently considering as "active" any project whose `project_stage` is not "COMPLETED". But I'm not sure if this is correct. Is it?
-

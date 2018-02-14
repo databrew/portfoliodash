@@ -645,9 +645,9 @@ server <- function(input, output) {
       active_projects <- ap %>%
         arrange(dataset_date) %>%
         group_by(project_id) %>%
-        summarise(status = dplyr::last(project_stage)) %>%
+        summarise(status = dplyr::last(project_status)) %>%
         ungroup %>%
-        dplyr::filter(!status %in% c('COMPLETED')) %>%
+        dplyr::filter(status %in% c('ACTIVE')) %>%
         summarise(x = n()) %>%
         .$x
 
