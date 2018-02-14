@@ -21,12 +21,12 @@ sidebar <- dashboardSidebar(
     menuItemOutput('about_menu'),
     uiOutput('log_out_ui'),
     div(style="position: absolute; bottom: 0px; background-color: white; width: 100%;",
-
+        
         div(style="width: 203px; margin:0 auto; padding: 0;",
-
+            
             tags$a(href='http://www.mastercardfdn.org/',
                    tags$img(src='mcf_logo.png', style="width: 100px; display: inline;")),
-
+            
             tags$a(href='http://www.ifc.org/',
                    tags$img(src='ifc_logo.jpeg', style="width: 100px; display: inline;"))
         ))
@@ -43,9 +43,9 @@ body <- dashboardBody(
     tabItem(
       tabName="main",
       fluidPage(
-      uiOutput('welcome_page'),
-      uiOutput('main_page')
-        )
+        uiOutput('welcome_page'),
+        uiOutput('main_page')
+      )
     ),
     tabItem(
       tabName = 'configure',
@@ -71,11 +71,11 @@ body <- dashboardBody(
           solidHeader = TRUE,
           status = "primary",
           width = NULL,
-
-
+          
+          
           timevisOutput("longevity_plot")
         )
-
+        
       )
     ),
     tabItem(
@@ -103,7 +103,7 @@ body <- dashboardBody(
             plotOutput('spending_rates_plot')
           )
         )
-
+        
       )
     ),
     tabItem(
@@ -297,7 +297,7 @@ server <- function(input, output) {
     user(NULL)
   })
   
-
+  
   # Based on user and user_id, create reactive datasets
   as_portfolio_this_user <- reactiveValues(data = as_portfolio)
   portfolio_projects_this_user <- reactiveValues(data = portfolio_projects)
@@ -314,7 +314,7 @@ server <- function(input, output) {
   
   # Create reactive datasets for the visualizations, based on selection on main page
   as_portfolio_selected <- reactiveValues(data = as_portfolio)
-
+  
   # Update the above reactive objects on submissions
   observeEvent({
     input$submit
@@ -327,22 +327,22 @@ server <- function(input, output) {
       # Users
       users_this_user$data <- 
         ur %>% filter(user_id == uu)
-
+      
       # Portfolio users
       pp <- portfolio_users_this_user$data
       portfolio_users_this_user$data <- pp %>%
         filter(user_id == uu)
-
+      
       # Portfolios
       p <- portfolios_this_user$data
       portfolios_this_user$data <- p %>%
         filter(portfolio_id %in% portfolio_users_this_user$data$portfolio_id)
-
+      
       # Portfolio projects
       pp <- portfolio_projects_this_user$data
       portfolio_projects_this_user$data <- pp %>%
         filter(portfolio_id %in% portfolios_this_user$data$portfolio_id)
-
+      
       # As portfolio
       ap <- as_portfolio_this_user$data
       as_portfolio_this_user$data <- 
@@ -379,7 +379,7 @@ server <- function(input, output) {
         filter(region_name %in% ifpr)
     }
   })
-
+  
   # Message about tabs
   observeEvent({
     input$log_out
@@ -387,9 +387,9 @@ server <- function(input, output) {
     input$tabs
   }, {
     message(paste0('Selected tab is: ', input$tabs))
-      })
+  })
   
- 
+  
   # Generate inputs for username/password
   output$username_ui <- renderUI({
     if(ok()){
@@ -441,7 +441,7 @@ server <- function(input, output) {
       }
       
     })
-
+  
   output$main_menu <-
     renderMenu({
       # if(ok()){
@@ -466,10 +466,10 @@ server <- function(input, output) {
     renderMenu({
       okay <- ok()
       if(okay){
-      menuItem(
-        text="Longevity",
-        tabName="longevity",
-        icon=icon("expand"))
+        menuItem(
+          text="Longevity",
+          tabName="longevity",
+          icon=icon("expand"))
       }
     })
   
@@ -556,7 +556,7 @@ server <- function(input, output) {
       'Log in on the left (using one of the user/pass combinations from below'
     }
   })
-
+  
   # Active portfolio volume
   output$apv_plot <- renderPlot({
     # Get this user's portfolio
@@ -574,56 +574,58 @@ server <- function(input, output) {
       # for now, hard-coding the filter of a few levels
       filter(!Stage %in% c('UNKNOWN', 'PRE-PIPELINE', 'OTHER'))
     
-    
-    ap$fraction = ap$Amount / sum(ap$Amount)
-    ap = ap[order(ap$fraction), ]
-    ap$ymax = cumsum(ap$fraction)
-    ap$ymin = c(0, head(ap$ymax, n=-1))
-    ap$grp <- 'Active volume'
-    
-    ap2 <- as_portfolio_selected$data
-    ap2 <- ap2 %>%
-      # Keep only the last observation for each project
-      arrange(dataset_date) %>%
-      group_by(project_id) %>%
-      filter(id == dplyr::last(id)) %>%
-      ungroup %>%
-      # filter(project_status == 'ACTIVE') %>%
-      group_by(Stage = project_stage) %>%
-      # I have no idea if total_fytd_expenditures is the right column here
-      summarise(Amount = sum(total_fytd_expenditures, na.rm = TRUE)) %>%
-      ungroup  %>%
-      # for now, hard-coding the filter of a few levels
-      filter(!Stage %in% c('UNKNOWN', 'PRE-PIPELINE', 'OTHER'))
-    
-    ap2$fraction = ap2$Amount / sum(ap2$Amount)
-    ap2 = ap2[order(ap2$fraction), ]
-    ap2$ymax = cumsum(ap2$fraction)
-    ap2$ymin = c(0, head(ap2$ymax, n=-1))
-    ap2$grp <- 'Amount spent'
-    
-    # Combine active volume and amount spent
-    ap <- bind_rows(ap, ap2)
-    
-    cols <- colorRampPalette(brewer.pal(n = 9,
-                                        name = 'Set3'))(length(unique(ap$Stage)))
-    
-    ggplot(data = ap, 
-           aes(fill=Stage, ymax=ymax, ymin=ymin, xmax=4, xmin=3)) +
-      geom_rect(colour="grey30", size = 0.5) +
-      coord_polar(theta="y") +
-      xlim(c(0, 4)) +
-      theme_fivethirtyeight() +
-      theme(panel.grid=element_blank()) +
-      theme(axis.text=element_blank()) +
-      theme(axis.ticks=element_blank()) +
-      scale_fill_manual(name = '',
-                        values = cols) +
-      guides(fill=guide_legend(ncol=2)) +
-      facet_wrap(~grp)
-    
-      })
-
+    if(nrow(ap) > 0){
+      ap$fraction = ap$Amount / sum(ap$Amount)
+      ap = ap[order(ap$fraction), ]
+      ap$ymax = cumsum(ap$fraction)
+      ap$ymin = c(0, head(ap$ymax, n=-1))
+      ap$grp <- 'Active volume'
+      
+      ap2 <- as_portfolio_selected$data
+      ap2 <- ap2 %>%
+        # Keep only the last observation for each project
+        arrange(dataset_date) %>%
+        group_by(project_id) %>%
+        filter(id == dplyr::last(id)) %>%
+        ungroup %>%
+        # filter(project_status == 'ACTIVE') %>%
+        group_by(Stage = project_stage) %>%
+        # I have no idea if total_fytd_expenditures is the right column here
+        summarise(Amount = sum(total_fytd_expenditures, na.rm = TRUE)) %>%
+        ungroup  %>%
+        # for now, hard-coding the filter of a few levels
+        filter(!Stage %in% c('UNKNOWN', 'PRE-PIPELINE', 'OTHER'))
+      
+      ap2$fraction = ap2$Amount / sum(ap2$Amount)
+      ap2 = ap2[order(ap2$fraction), ]
+      ap2$ymax = cumsum(ap2$fraction)
+      ap2$ymin = c(0, head(ap2$ymax, n=-1))
+      ap2$grp <- 'Amount spent'
+      
+      # Combine active volume and amount spent
+      ap <- bind_rows(ap, ap2)
+      
+      cols <- colorRampPalette(brewer.pal(n = 9,
+                                          name = 'Set3'))(length(unique(ap$Stage)))
+      
+      ggplot(data = ap, 
+             aes(fill=Stage, ymax=ymax, ymin=ymin, xmax=4, xmin=3)) +
+        geom_rect(colour="grey30", size = 0.5) +
+        coord_polar(theta="y") +
+        xlim(c(0, 4)) +
+        theme_fivethirtyeight() +
+        theme(panel.grid=element_blank()) +
+        theme(axis.text=element_blank()) +
+        theme(axis.ticks=element_blank()) +
+        scale_fill_manual(name = '',
+                          values = cols) +
+        guides(fill=guide_legend(ncol=2)) +
+        facet_wrap(~grp)
+    } else {
+      NULL
+    }
+  })
+  
   
   output$user_details <- DT::renderDataTable({
     if(ok()){
@@ -642,16 +644,29 @@ server <- function(input, output) {
       
       # Calculate number of active projects
       ap <- as_portfolio_selected$data
-      active_projects <- ap %>%
+      project_statuses <- ap %>%
         arrange(dataset_date) %>%
         group_by(project_id) %>%
         summarise(status = dplyr::last(project_status)) %>%
         ungroup %>%
-        dplyr::filter(status %in% c('ACTIVE')) %>%
-        summarise(x = n()) %>%
-        .$x
-
+        group_by(status) %>% 
+        tally
+        
+      active_projects <- project_statuses$n[project_statuses$status == 'ACTIVE']
+      if(length(active_projects) == 0){active_projects <- 0}
+      closed_projects <- project_statuses$n[project_statuses$status == 'CLOSED']
+      if(length(closed_projects) == 0){closed_projects <- 0}
       
+      # Calculate total portfolio size
+      tps <- ap %>%
+        arrange(dataset_date) %>%
+        group_by(project_id) %>%
+        filter(project_status == dplyr::last(project_status)) %>%
+        ungroup %>%
+        summarise(x = sum(total_project_size, na.rm = TRUE)) %>%
+        .$x
+      tps <- comma(round(tps / 1000000))
+      tps <- paste0('$', tps, 'M')
       
       fluidPage(
         # fluidRow(
@@ -671,13 +686,13 @@ server <- function(input, output) {
             color = "orange"
           ),
           valueBox(
-            subtitle = "Burn Rate", 
+            subtitle = "Burn Rate (placeholder)", 
             value = sprintf("%.1f %%", mean(longevity_data[,"burn_rate"])), 
             icon = icon("percent"),
             color = "orange"
           ),
           valueBox(
-            subtitle = "Avg Project Size", 
+            subtitle = "Avg Project Size (placeholder)", 
             value = paste0("$", sprintf("%.1f", mean(longevity_data[,"prorated_total_funds_managed_by_ifc"]/1000000)), "M"), 
             icon = icon("bar-chart"),
             color = "orange"
@@ -686,13 +701,13 @@ server <- function(input, output) {
         fluidRow(
           valueBox(
             subtitle = "Closed Projects", 
-            value = paste0(nrow(longevity_data[longevity_data$closed == 1,])), 
+            value = closed_projects, 
             icon = icon("check"),
             color = "blue"
           ),
           valueBox(
             subtitle = "Total Portfolio Size", 
-            value = paste0("$", sprintf("%.1f", sum(longevity_data[,"prorated_total_funds_managed_by_ifc"]/1000000)), "M"), 
+            value = tps, 
             icon = icon("line-chart"),
             color = "blue"
           ),
@@ -828,8 +843,8 @@ server <- function(input, output) {
       choices <- portfolios_all$data %>%
         filter(!portfolio_id %in% pr$portfolio_id)
       choices_labels <- paste0(choices$portfolio_name, ' (ID:',
-                                       choices$portfolio_id,
-                                       ')')
+                               choices$portfolio_id,
+                               ')')
       choices <- choices$portfolio_id
       names(choices) <- choices_labels
       choices <- sort(choices)
@@ -889,9 +904,9 @@ server <- function(input, output) {
         ),
         fluidRow(
           selectInput('create_vals',
-                    'Which projects do you want to include in this portfolio?',
-                    choices = po,
-                    multiple = TRUE)
+                      'Which projects do you want to include in this portfolio?',
+                      choices = po,
+                      multiple = TRUE)
         ),
         fluidRow(
           actionButton('create_confirm',
@@ -958,22 +973,22 @@ server <- function(input, output) {
         filtered_projects <- as_portfolio_all$data %>%
           filter(!duplicated(project_id)) %>%
           filter(project_id %in% po)
-
+        
         # Filter po based on the filter controls
         if(!is.null(input$filter_region)){
           filtered_projects <- 
             filtered_projects %>%
-          dplyr::filter(region_name %in% input$filter_region)
+            dplyr::filter(region_name %in% input$filter_region)
         }
         if(!is.null(input$filter_project_status)){
           filtered_projects <- 
             filtered_projects %>%
-          dplyr::filter(project_status %in% input$filter_project_status)
+            dplyr::filter(project_status %in% input$filter_project_status)
         }
         if(!is.null(input$filter_business_line)){
           filtered_projects <- 
             filtered_projects %>%
-          dplyr::filter(primary_business_line_name %in% input$filter_business_line)
+            dplyr::filter(primary_business_line_name %in% input$filter_business_line)
         }
         if(!is.null(input$filter_direction)){
           if(input$filter_direction == 'descending'){
@@ -1015,54 +1030,54 @@ server <- function(input, output) {
   observeEvent({
     input$action_modify;
     input$modify_new},{
-    if(!is.null(input$modify_new)){
-      et <- edit_type()
-      if(et == 'Modify'){
-        this_portfolio <- input$modify_new # this is NULL
-        this_portfolio_id <- portfolios_all$data %>%
-          filter(portfolio_name == this_portfolio) %>%
-          .$portfolio_id
-        these_projects_in <-
-          portfolio_projects_all$data %>%
-          filter(portfolio_id == this_portfolio_id) %>%
-          left_join(as_portfolio %>%
-                      dplyr::select(project_id,
-                                    project_name),
-                    by = 'project_id') %>%
-          filter(!duplicated(project_id))
-        these_projects_out <-
-          portfolio_projects_all$data %>%
-          filter(portfolio_id != this_portfolio_id) %>%
-          left_join(as_portfolio %>%
-                      dplyr::select(project_id,
-                                    project_name),
-                    by = 'project_id') %>%
-          filter(!duplicated(project_id))
-        these_projects_in_labels <- these_projects_in$project_name
-        these_projects_in <- these_projects_in$project_id
-        names(these_projects_in) <- these_projects_in_labels
-        these_projects_out_labels <- these_projects_out$project_name
-        these_projects_out <- these_projects_out$project_id
-        names(these_projects_out) <- these_projects_out_labels
-        these_projects_in <- these_projects_in[!is.na(these_projects_in) &
-                                                 !is.na(these_projects_in_labels)]
-        these_projects_out <- these_projects_out[!is.na(these_projects_out) &
-                                                   !is.na(these_projects_out_labels)]
-        if(!is.null(these_projects_in)){
-          projects_in(these_projects_in)
+      if(!is.null(input$modify_new)){
+        et <- edit_type()
+        if(et == 'Modify'){
+          this_portfolio <- input$modify_new # this is NULL
+          this_portfolio_id <- portfolios_all$data %>%
+            filter(portfolio_name == this_portfolio) %>%
+            .$portfolio_id
+          these_projects_in <-
+            portfolio_projects_all$data %>%
+            filter(portfolio_id == this_portfolio_id) %>%
+            left_join(as_portfolio %>%
+                        dplyr::select(project_id,
+                                      project_name),
+                      by = 'project_id') %>%
+            filter(!duplicated(project_id))
+          these_projects_out <-
+            portfolio_projects_all$data %>%
+            filter(portfolio_id != this_portfolio_id) %>%
+            left_join(as_portfolio %>%
+                        dplyr::select(project_id,
+                                      project_name),
+                      by = 'project_id') %>%
+            filter(!duplicated(project_id))
+          these_projects_in_labels <- these_projects_in$project_name
+          these_projects_in <- these_projects_in$project_id
+          names(these_projects_in) <- these_projects_in_labels
+          these_projects_out_labels <- these_projects_out$project_name
+          these_projects_out <- these_projects_out$project_id
+          names(these_projects_out) <- these_projects_out_labels
+          these_projects_in <- these_projects_in[!is.na(these_projects_in) &
+                                                   !is.na(these_projects_in_labels)]
+          these_projects_out <- these_projects_out[!is.na(these_projects_out) &
+                                                     !is.na(these_projects_out_labels)]
+          if(!is.null(these_projects_in)){
+            projects_in(these_projects_in)
+          }
+          if(!is.null(these_projects_out)){
+            projects_out(these_projects_out)
+          }
         }
-        if(!is.null(these_projects_out)){
-          projects_out(these_projects_out)
-        }
+        
       }
-
-    }
-  })
+    })
   
   # Observe edits to modify the database
   observeEvent(input$subscribe_confirm, {
     message('SUBSCRIPTION CONFIRMED')
-
+    
     pu <- portfolio_users_all$data
     # Add new rows for the new subscription
     new_rows <- input$subscribe_new
@@ -1147,19 +1162,19 @@ server <- function(input, output) {
     remove_rows <- as.numeric(input$remove_new)
     remove_rows <-
       pu$user_id == ui &
-              pu$portfolio_id %in% remove_rows
+      pu$portfolio_id %in% remove_rows
     
     if(length(remove_rows) > 0){
       pu <- pu[!remove_rows,]
       portfolio_users_all$data <-pu
-
+      
       # Update the database
       copy_to(connection_object,
               portfolio_users_all$data,
               "portfolio_users",
               temporary = FALSE,
               overwrite = TRUE)
-
+      
       # Update the session too
       portfolio_users_this_user$data <- portfolio_users_all$data %>%
         filter(user_id == user_id())
@@ -1217,7 +1232,7 @@ server <- function(input, output) {
             "portfolio_projects",
             temporary = FALSE,
             overwrite = TRUE)
-
+    
     # Update the session too
     portfolio_projects_all$data <- new_pp
     portfolio_users_this_user$data <- portfolio_users_all$data %>%
@@ -1549,17 +1564,17 @@ server <- function(input, output) {
         fluidRow(
           column(2),
           shinydashboard::box(
-                   tags$p(style = "font-size: 16px;",
-                          paste0('During the development phase, you can log-in using any of the names below as the username.')
-                   ),
-                   DT::dataTableOutput('credentials_table'),
-                   title = 'Credentials',
-                   status = 'warning',
-                   solidHeader = TRUE,
-                   collapsible = TRUE,
-                   collapsed = FALSE,
-                   width = 7
-                 ),
+            tags$p(style = "font-size: 16px;",
+                   paste0('During the development phase, you can log-in using any of the names below as the username.')
+            ),
+            DT::dataTableOutput('credentials_table'),
+            title = 'Credentials',
+            status = 'warning',
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            collapsed = FALSE,
+            width = 7
+          ),
           column(2))
       } else {
         fluidRow(select_box, filter_box,  chart_box)
@@ -1635,7 +1650,7 @@ server <- function(input, output) {
       mutate(date = format(date, '%Y-%m'))
     n1 <- nPlot(value ~ date, group = "key", data = portfolio_mat_data, type = "multiBarChart", width = 850, dom = 'funding_plot')
     n1$chart(#color = c('red', 'blue', 'green'),
-             stacked = TRUE)
+      stacked = TRUE)
     return(n1)
   })
   
@@ -1688,7 +1703,7 @@ server <- function(input, output) {
       stringsAsFactors = FALSE
     )
     timevis_data <- rbind(timevis_data, efy)
-
+    
     timeline <- timevis(timevis_data, groups = group_data, showZoom = FALSE, fit = FALSE,
                         options = list(zoomable = FALSE, 
                                        horizontalScroll = FALSE,
@@ -1702,7 +1717,7 @@ server <- function(input, output) {
                         )
     ) %>% addCustomTime(longevity_data$dataset_date[1], "datadate")
     timeline
-})
+  })
   
   output$tr_text <- renderText({longevity_plot_range()})
   
