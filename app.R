@@ -269,7 +269,7 @@ body <- dashboardBody(
 ui <- dashboardPage(header, sidebar, body, skin="blue")
 
 # Server
-server <- function(input, output) {
+server <- function(input, output, session) {
   
   # Create reactive user and user_id values
   user <- reactiveVal(value = NULL)
@@ -1090,7 +1090,7 @@ server <- function(input, output) {
       portfolio_users_all$data <- bind_rows(pu, new_rows)
       
       # Update the database
-      copy_to(connection_object, 
+      copy_to(pool, 
               portfolio_users_all$data, 
               "portfolio_users",
               temporary = FALSE,
@@ -1127,7 +1127,7 @@ server <- function(input, output) {
       portfolios_all$data <- bind_rows(p, new_portfolio)
       p <- portfolios_all$data
       # db
-      copy_to(connection_object, 
+      copy_to(pool, 
               portfolios_all$data, 
               "portfolios",
               temporary = FALSE,
@@ -1147,7 +1147,7 @@ server <- function(input, output) {
       portfolio_projects_all$data <-
         bind_rows(portfolio_projects_all$data,
                   new_portfolio_projects)
-      copy_to(connection_object, 
+      copy_to(pool, 
               portfolio_projects_all$data, 
               "portfolio_projects",
               temporary = FALSE,
@@ -1169,7 +1169,7 @@ server <- function(input, output) {
       portfolio_users_all$data <-pu
       
       # Update the database
-      copy_to(connection_object,
+      copy_to(pool,
               portfolio_users_all$data,
               "portfolio_users",
               temporary = FALSE,
@@ -1227,7 +1227,7 @@ server <- function(input, output) {
       filter(portfolio_id != this_portfolio_id) %>% 
       bind_rows(pp)
     # Update the database
-    copy_to(connection_object,
+    copy_to(pool,
             new_pp,
             "portfolio_projects",
             temporary = FALSE,
@@ -1271,17 +1271,17 @@ server <- function(input, output) {
     as_portfolio_this_user$data <- as_portfolio_this_user$data %>%
       filter(project_id %in% portfolio_projects_this_user$data$project_id)
     # Update database
-    copy_to(connection_object,
+    copy_to(pool,
             portfolio_projects_all$data,
             "portfolio_projects",
             temporary = FALSE,
             overwrite = TRUE)
-    copy_to(connection_object,
+    copy_to(pool,
             portfolio_users_all$data ,
             "portfolio_users",
             temporary = FALSE,
             overwrite = TRUE)
-    copy_to(connection_object,
+    copy_to(pool,
             portfolios_all$data ,
             "portfolios",
             temporary = FALSE,
@@ -1732,6 +1732,12 @@ server <- function(input, output) {
   })
   output$indicators_plot <- renderPlot({
     g1
+  })
+  
+  # On session end, close
+  session$onSessionEnded(function() {
+    message('Session ended. Closing the connection pool.')
+    tryCatch(pool::poolClose(pool), error = function(e) {message('')})
   })
   
 }

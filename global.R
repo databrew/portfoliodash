@@ -21,6 +21,8 @@ library(readr)
 library(babynames)
 library(rlang)
 library(scales)
+library(pool) # devtools::install_github("rstudio/pool")
+
 options(scipen = '999')
 
 # Source package files (if not having installed "portfoliodash")
@@ -310,7 +312,7 @@ gg_spending_fish <- function(){
 }
 
 # Establish a connection to use during app session
-connection_object <- credentials_connect(credentials_extract())
+pool <- create_pool(options_list = credentials_extract())
 
 # Create a dummy id for use in as_portfolio
 as_portfolio <- as_portfolio %>%
