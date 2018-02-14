@@ -639,6 +639,20 @@ server <- function(input, output) {
   output$main_page <- renderUI({
     okay <- ok()
     if(okay){
+      
+      # Calculate number of active projects
+      ap <- as_portfolio_selected$data
+      active_projects <- ap %>%
+        arrange(dataset_date) %>%
+        group_by(project_id) %>%
+        summarise(status = dplyr::last(project_stage)) %>%
+        ungroup %>%
+        dplyr::filter(!status %in% c('COMPLETED')) %>%
+        summarise(x = n()) %>%
+        .$x
+
+      
+      
       fluidPage(
         # fluidRow(
         #   shinydashboard::box(
@@ -651,7 +665,8 @@ server <- function(input, output) {
         fluidRow(
           valueBox(
             subtitle = "Active Projects", 
-            value = paste0(nrow(longevity_data[longevity_data$active == 1,])), 
+            value = active_projects,
+            # value = paste0(nrow(longevity_data[longevity_data$active == 1,])), 
             icon = icon("list"),
             color = "orange"
           ),
@@ -1423,7 +1438,7 @@ server <- function(input, output) {
     
   })
   
-    output$welcome_page <- renderUI({
+  output$welcome_page <- renderUI({
     okay <- ok()
     welcome_width <- ifelse(okay, 8, 11)
     cl <- ifelse(okay, TRUE, FALSE)
@@ -1450,6 +1465,8 @@ server <- function(input, output) {
         collapsed = cl,
         width = 12
       )
+    
+    
     pc <- portfolios_this_user$data
     portfolio_choices <- pc$portfolio_id
     names(portfolio_choices) <- pc$portfolio_name
@@ -1512,14 +1529,22 @@ server <- function(input, output) {
         solidHeader = TRUE,
         status = "primary")
     
+    if(okay){
+      welcome_row <- NULL
+    } else {
+      welcome_row <- 
+        fluidPage(
+          fluidRow(
+            column(welcome_width,
+                   welcome_box),
+            column(filter_width,
+                   uiOutput('portfolios_text')
+            )))
+    }
+    
+    
     fluidPage(
-      fluidRow(
-        column(welcome_width,
-               welcome_box),
-        column(filter_width,
-               uiOutput('portfolios_text'))
-        
-      ),
+      welcome_row,
       if(!okay){
         fluidRow(
           column(2),
@@ -1550,26 +1575,26 @@ server <- function(input, output) {
   })
   
   
-  output$portfolios_text <- renderUI({
-    okay <- ok()
-    out <- NULL
-    if(okay){
-      # Get the portfolios available to the user
-      p <- portfolios_this_user$data
-      p <- p$portfolio_name
-      n <- length(p)
-      if(length(p) > 0){
-        p <- paste0(p, collapse = ', ')
-        out <- 
-          valueBox(value = n,
-                 subtitle = 'Subscribed portfolios',
-                 icon = icon('tasks'),
-                 color = 'blue',
-                 width = 12)
-      } 
-    } 
-    return(out)
-  })
+  # output$portfolios_text <- renderUI({
+  #   okay <- ok()
+  #   out <- NULL
+  #   if(okay){
+  #     # Get the portfolios available to the user
+  #     p <- portfolios_this_user$data
+  #     p <- p$portfolio_name
+  #     n <- length(p)
+  #     if(length(p) > 0){
+  #       p <- paste0(p, collapse = ', ')
+  #       out <- 
+  #         valueBox(value = n,
+  #                subtitle = 'Subscribed portfolios',
+  #                icon = icon('tasks'),
+  #                color = 'blue',
+  #                width = 12)
+  #     } 
+  #   } 
+  #   return(out)
+  # })
   
   output$funding_plot <- renderChart({
     
