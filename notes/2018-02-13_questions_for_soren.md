@@ -47,3 +47,10 @@ In the above right-most chart, I am using the `total_fytd_expenditures` field fo
 
 (Not really a question) I've overhauled the documentation which covers how to build the database from scratch. Feel free to comment. [HERE](https://github.com/databrew/portfoliodash/tree/feature/mid_february#portfolio-dashboard)
 
+## Question 9: What is the "start date" and "end date" for each project?
+
+My understanding is that the `dataset_date` field is the date of observation for each product. For the spending fish, the x-axis will be the percentage of project completion, right? In this case, I need to know what the start date and end date for each project is, and it's not clear from the raw data what this would be.
+
+(For start date, I could use earliest observation of `dataset_date`, but I'm wondering if there is a pre-first-observation date)
+
+(For end date, I could use latest observation of `dataset_date`, but many projects have only one `dataset_date`)
