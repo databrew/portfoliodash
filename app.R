@@ -1,3 +1,4 @@
+library(shinyURL) #https://github.com/aoles/shinyURL
 
 source('global.R')
 
@@ -29,11 +30,13 @@ sidebar <- dashboardSidebar(
             
             tags$a(href='http://www.ifc.org/',
                    tags$img(src='ifc_logo.jpeg', style="width: 100px; display: inline;"))
-        ))
+        )),
+    verbatimTextOutput("queryText")
   )
 )
 
 body <- dashboardBody(
+  shinyURL.ui(),
   tags$head(
     tags$link(rel = "stylesheet", type = "text/css", href = "styles.css")
   ),
@@ -1734,12 +1737,33 @@ server <- function(input, output, session) {
     g1
   })
   
+  # Parse the GET query string
+  output$queryText <- renderText({
+    # Add, for example, ?foo=123
+    query <- parseQueryString(session$clientData$url_search)
+    
+    # Return a string with key-value pairs
+    out <- paste(names(query), query, sep = "=", collapse=", ")
+    if(nchar(out) > 0){
+      out <- paste0('PARSED QUERY STRING IS\n',
+                    out)
+      return(out)
+    } else {
+      return(NULL)
+    }
+  })
+  
+  # Url
+  shinyURL.server()
+  
   # On session end, close
   session$onSessionEnded(function() {
+    message('Saving the current url')
+    enableBookmarking(store = 'url')
     message('Session ended. Closing the connection pool.')
     tryCatch(pool::poolClose(pool), error = function(e) {message('')})
   })
   
 }
 
-shinyApp(ui, server)
+shinyApp(ui, server, enableBookmarking = 'url')
