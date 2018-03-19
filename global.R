@@ -34,7 +34,8 @@ for(i in 1:length(package_files)){
 # Define whether being run in a development env (ie, "local" on Joe's computer)
 # or on production
 # We only do this so as to use cached data (rather than database) when testing locally
-local <- grepl('joebrew', getwd())
+# local <- grepl('joebrew', getwd())
+local <- TRUE
 quick_load <- TRUE
 
 # Define function for loading in data
@@ -43,7 +44,7 @@ load_data <- function(local = FALSE,
                       table = 'as_portfolio'){
   file_name <- paste0(table, '.RData')
   # Read in the as portfolio table directly from the database
-  if((file_name %in% dir() & quick_load) | !local){
+  if((file_name %in% dir() & quick_load) & local){
     load(file_name)
   } else {
     co <- src_postgres(dbname = 'portfolio')
@@ -57,7 +58,6 @@ load_data <- function(local = FALSE,
          envir = .GlobalEnv)
 }
 
-local <- FALSE
 # Load the as_portfolio table
 load_data(local = local,
           quick_load = quick_load,
