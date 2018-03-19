@@ -38,6 +38,8 @@ for(i in 1:length(package_files)){
 local <- TRUE
 quick_load <- TRUE
 
+creds <- credentials_extract()
+
 # Define function for loading in data
 load_data <- function(local = FALSE,
                       quick_load = FALSE,
@@ -47,7 +49,7 @@ load_data <- function(local = FALSE,
   if((file_name %in% dir() & quick_load) & local){
     load(file_name)
   } else {
-    co <- src_postgres(dbname = 'portfolio')
+    co <- src_postgres(dbname = creds$dbname)
     x <- get_data(query = paste0('SELECT * FROM portfolio.', table),
                              dbname = 'portfolio',
                              connection_object = co)
