@@ -39,6 +39,8 @@ local <- TRUE
 quick_load <- TRUE
 
 creds <- credentials_extract()
+# Establish a connection to use during app session
+pool <- create_pool(options_list = creds)
 
 # Define function for loading in data
 load_data <- function(local = FALSE,
@@ -49,10 +51,8 @@ load_data <- function(local = FALSE,
   if((file_name %in% dir() & quick_load) & local){
     load(file_name)
   } else {
-    co <- src_postgres(dbname = creds$dbname)
-    x <- get_data(query = paste0('SELECT * FROM portfolio.', table),
-                             # dbname = creds$dbname,
-                             connection_object = co)
+    co <- pool
+    x <- get_data(query = paste0('SELECT * FROM portfolio.', table))
     save(x, file = file_name)
   }
   assign(table,
@@ -74,15 +74,15 @@ load_data(local = local,
 #           table = 'portfolio_indicators')
 # Load the portfolio_projects table
 load_data(local = local,
-          quick_load = FALSE,
+          quick_load = TRUE,
           table = 'portfolio_projects')
 # Load the portfolio_users table
 load_data(local = local,
-          quick_load = FALSE,
+          quick_load = TRUE,
           table = 'portfolio_users')
 # Load the portfolios table
 load_data(local = local,
-          quick_load = FALSE,
+          quick_load = TRUE,
           table = 'portfolios')
 # Load the users table
 load_data(local = local,
@@ -314,8 +314,6 @@ gg_spending_fish <- function(){
   return(g)
 }
 
-# Establish a connection to use during app session
-pool <- create_pool(options_list = credentials_extract())
 
 # Create a dummy id for use in as_portfolio
 as_portfolio <- as_portfolio %>%
