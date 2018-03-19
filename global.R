@@ -51,7 +51,7 @@ load_data <- function(local = FALSE,
   } else {
     co <- src_postgres(dbname = creds$dbname)
     x <- get_data(query = paste0('SELECT * FROM portfolio.', table),
-                             dbname = 'portfolio',
+                             # dbname = creds$dbname,
                              connection_object = co)
     save(x, file = file_name)
   }
