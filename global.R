@@ -57,6 +57,7 @@ load_data <- function(local = FALSE,
          envir = .GlobalEnv)
 }
 
+local <- FALSE
 # Load the as_portfolio table
 load_data(local = local,
           quick_load = quick_load,
