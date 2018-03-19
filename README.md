@@ -50,6 +50,10 @@ user: "worldbank"
 password: <PASSWORD GOES HERE>
 ```
 
+```
+psql --host=databrewdb.cfejspjhdciw.us-east-2.rds.amazonaws.com --port=8080 --username=worldbank --dbname=dev
+```
+
 
 If you're using a version control system (like git), **be careful**: the `credentials/credentials.yaml` file is not explicitly git-ignored, so you should be sure not to `git add` it, less you risk exposing your credentials to people who shouldn't have them.
 
