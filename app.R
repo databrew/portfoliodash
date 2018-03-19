@@ -1,4 +1,4 @@
-library(shinyURL) #https://github.com/aoles/shinyURL
+# library(shinyURL) #https://github.com/aoles/shinyURL
 
 source('global.R')
 
@@ -258,8 +258,8 @@ body <- dashboardBody(
                        h5('Amsterdam, ', 
                           a(href = 'mailto:jbrew1@worldbank.org',
                             'jbrew1@worldbank.org'))),
-              fluidRow(helpText("Joe is a data scientist for", a(href = 'http://databrew.cc/', 'DataBrew.'), "He has a background in epidemiology and development economics. He works in both industry as a consultant as well as academia. His research focuses on the economics of malaria elimination programs in Sub-Saharan Africa.")),
-              fluidRow(shinyURL.ui())
+              fluidRow(helpText("Joe is a data scientist for", a(href = 'http://databrew.cc/', 'DataBrew.'), "He has a background in epidemiology and development economics. He works in both industry as a consultant as well as academia. His research focuses on the economics of malaria elimination programs in Sub-Saharan Africa."))#,
+              # fluidRow(shinyURL.ui())
             ),
             width = 4)
         )
@@ -1753,8 +1753,8 @@ server <- function(input, output, session) {
     }
   })
   
-  # Url
-  shinyURL.server()
+  # # Url
+  # shinyURL.server()
   
   # On session end, close
   session$onSessionEnded(function() {
