@@ -46,13 +46,18 @@ pool <- create_pool(options_list = creds)
 load_data <- function(local = FALSE,
                       quick_load = FALSE,
                       table = 'as_portfolio'){
+  if(grel('as_', table)){
+    schema <- 'portfolio'
+  } else {
+      schema <- 'pd_portfolio'
+    }
   file_name <- paste0(table, '.RData')
   # Read in the as portfolio table directly from the database
   if((file_name %in% dir() & quick_load) & local){
     load(file_name)
   } else {
     co <- pool
-    x <- get_data(query = paste0('SELECT * FROM portfolio.', table))
+    x <- get_data(query = paste0('SELECT * FROM ', scehma, '.', table))
     save(x, file = file_name)
   }
   assign(table,

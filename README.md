@@ -1,5 +1,35 @@
 # Portfolio dashboard
-A dashboard for the World Bank / IFC. Built in collaboration with [Databrew](http://datbrew.cc)
+A dashboard for the World Bank / IFC. 
+
+# To-do
+
+## Overall status  
+
+This dashboard is far from being finished. Its overall content is based on a somewhat complex excel file. In addition to trying to emulate the excel file's visualizations closely, the dashboard should have user- and group-specific features and associated privileges. This will require not only typical R shiny programming, but also substantial interaction with the database.
+
+## Tasks
+
+
+- Log-in should be at the group level (ie, DFS); password stored in plain-text format
+- Anybody can see anything, but only able to edit portfolio for own group
+- URL should reflect the group (ie, /traveldash/csi) and admin should be appended if admin privileges (ie, /traveldash/csi/admin)
+- Re-populate portfolios (names, associated projects)
+- Create FIG global portfolio based on oleksiys spreadhseet or based on primary business line = fig
+- Create Mastercard Foundation portfolio (definition by proj ids)
+- Create corporate governance portfolio (dept = ESG, primary product = corporate governance)
+- Implement filters as a string to be parsed/ evaluated
+- One should be allowed to filter without saving results as a portfolio.
+- Delete excess business lines, depts, stages
+- Only select 1 portfolio at a time
+- Filters should be: status, region, and dept (business line), status, stage, primary product
+- For amount spent, use ITD (inception to date)
+- If end date available, use; otherwise completion date.
+- If start date is available, use; otherwise planned start date.
+- Look and feel: emulate excel, as tight as possible - eg longevity: make less white space b/w rows, etc.
+
+
+# Developer's guide
+
 
 ## Installing this package
 
@@ -213,8 +243,13 @@ This section only applies to the person managing the AWS database. Post-dump (ie
 - Open a psql session within our AWS DB instance.
 
 ```
-psql --host=portfolio.cfejspjhdciw.us-east-2.rds.amazonaws.com --port=8080 --username=joebrew --dbname=portfolio 
+psql --host=figssamel1.cosjv4zx2mww.us-east-1.rds.amazonaws.com --port=5432 --username=postgres --dbname=ARL 
 ```
+
+```
+psql --host=databrewdb.cfejspjhdciw.us-east-2.rds.amazonaws.com --port=8080 --username=worldbank --dbname=ARL 
+```
+
 
 - Restore the locally created dump from within psql
 ``` 
