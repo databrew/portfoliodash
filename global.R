@@ -57,7 +57,7 @@ load_data <- function(local = FALSE,
     load(file_name)
   } else {
     co <- pool
-    x <- get_data(query = paste0('SELECT * FROM ', scehma, '.', table))
+    x <- get_data(query = paste0('SELECT * FROM ', schema, '.', table))
     save(x, file = file_name)
   }
   assign(table,

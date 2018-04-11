@@ -398,7 +398,7 @@ server <- function(input, output, session) {
     if(ok()){
       NULL
     } else {
-      textInput('email', 'Email:', value = 'jbrew1@worldbank.org')
+      textInput('email', 'Email:', value = 'sheitmann@ifc.org')
     }
   })
   # output$password_ui <- renderUI({

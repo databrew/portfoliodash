@@ -84,6 +84,13 @@ password: <PASSWORD GOES HERE>
 psql --host=databrewdb.cfejspjhdciw.us-east-2.rds.amazonaws.com --port=8080 --username=worldbank --dbname=dev
 ```
 
+## Copying data from database to local
+
+- Create a dump from WB AWS RDS endpoint:
+```
+pg_dump -h figssamel1.cosjv4zx2mww.us-east-1.rds.amazonaws.com -U postgres -f ~/Desktop/dump.sql ARL
+```
+
 
 If you're using a version control system (like git), **be careful**: the `credentials/credentials.yaml` file is not explicitly git-ignored, so you should be sure not to `git add` it, less you risk exposing your credentials to people who shouldn't have them.
 
