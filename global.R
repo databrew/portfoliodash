@@ -46,7 +46,7 @@ pool <- create_pool(options_list = creds)
 load_data <- function(local = FALSE,
                       quick_load = FALSE,
                       table = 'as_portfolio'){
-  if(grel('as_', table)){
+  if(grepl('as_', table)){
     schema <- 'portfolio'
   } else {
       schema <- 'pd_portfolio'
